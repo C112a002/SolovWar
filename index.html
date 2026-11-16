@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>SolovWar 槍戰</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap">
 <style>
 :root{--bg:#10131a;--card:rgba(255,255,255,.92);--fg:#1b1d22;--sub:#555b66;--accent:#3d7bff;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--card:rgba(24,27,34,.93);--fg:#eceef2;--sub:#a3a9b5;color-scheme:dark}}
@@ -79,20 +82,162 @@ body:not(.showkf) #kf,body:not(.showchat) #chat{display:none}
 #crh{right:max(184px,calc(env(safe-area-inset-right) + 174px));bottom:max(34px,env(safe-area-inset-bottom));width:56px;height:56px;background:rgba(255,255,255,.22);font-size:13px}
 body.touch.playing #fire,body.touch.playing #rld,body.touch.playing #adsb,body.touch.playing #crh{display:block}
 #adsb.on,#crh.on{background:rgba(61,123,255,.6)}
+
+/* ════════════════════════════════════════════════════════════════
+   遊戲UI.zip 設計稿套用（HUD 重繪，基準畫布 1920×1080）
+   僅覆寫設計稿中出現的元件；未出现的 UI 維持原樣。
+   ════════════════════════════════════════════════════════════════ */
+:root{--ui-ink:#E6F1FF;--ui-dim:#8FA6BF;--ui-teal:#38F2C8;--ui-track:#0A1220;
+      --ui-panel:#152238;--ui-line:#3C5A7A;--ui-red:#FF2E2E;
+      --ui-font:"Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
+
+/* ---- 虛擬搖桿：雷達式外環＋刻度＋內圈，搖桿帽為亮白圓環 ---- */
+#joy{--js:clamp(168px,36.2vmin,420px);width:var(--js);height:var(--js);
+  border:1px solid rgba(255,255,255,.55);
+  background:
+    radial-gradient(circle closest-side,transparent calc(72.5% - 1px),rgba(255,255,255,.17) calc(72.5% - 1px) 72.5%,transparent calc(72.5% + .5px)),
+    linear-gradient(to right,transparent calc(50% - .5px),rgba(255,255,255,.15) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px)),
+    linear-gradient(to bottom,transparent calc(50% - .5px),rgba(255,255,255,.15) calc(50% - .5px) calc(50% + .5px),transparent calc(50% + .5px));
+  box-shadow:0 0 14px rgba(0,0,0,.5)}
+#joy::before{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.6) 0 1.7deg,transparent 1.7deg 45deg);
+  -webkit-mask:radial-gradient(circle closest-side,transparent calc(89% - 1.5px),#000 calc(89% - 1.5px) 100%,transparent 100%);
+  mask:radial-gradient(circle closest-side,transparent calc(89% - 1.5px),#000 calc(89% - 1.5px) 100%,transparent 100%)}
+#knob{width:calc(var(--js)*.355);height:calc(var(--js)*.355);margin:calc(var(--js)*-.1775);
+  background:rgba(150,162,180,.55);border:2px solid #fff;
+  box-shadow:0 0 13px rgba(255,255,255,.6),inset 0 0 15px rgba(255,255,255,.22)}
+#knob::after{content:"";position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21%;
+  border-radius:50%;background:#EDF2F7;box-shadow:0 0 9px rgba(255,255,255,.75)}
+
+/* ---- 波數 / 擊殺（左上） ---- */
+#topleft{position:fixed;z-index:5;top:clamp(12px,3.4vmin,37px);left:clamp(60px,31.8vmin,343px);
+  display:flex;gap:clamp(12px,3vmin,33px);pointer-events:none}
+#top,#kill{position:static;transform:none;top:auto;left:auto;white-space:nowrap;
+  background:none;border:0;border-radius:0;padding:0;color:var(--ui-ink);
+  font-family:var(--ui-font);font-size:clamp(19px,4.63vmin,50px);font-weight:700;letter-spacing:.05em;
+  font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.85)}
+
+/* ---- 剩餘敵人環形計數 ---- */
+#enemy{position:fixed;z-index:5;top:clamp(12px,4.4vmin,47px);right:clamp(96px,43vmin,464px);
+  width:clamp(86px,20.7vmin,224px);height:clamp(86px,20.7vmin,224px);pointer-events:none;
+  font-family:var(--ui-font)}
+#enemy svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+#enemy .tk{fill:none;stroke:rgba(255,46,46,.32);stroke-width:3}
+#enemy .pg{fill:none;stroke:var(--ui-red);stroke-width:9;stroke-linecap:round;
+  stroke-dasharray:var(--p,100) 100;filter:drop-shadow(0 0 5px rgba(255,46,46,.9))}
+#enemy b{position:absolute;left:0;right:0;top:18.5%;text-align:center;color:var(--ui-ink);
+  font-size:clamp(22px,5.2vmin,56px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 12px rgba(0,0,0,.75)}
+#enemy i{position:absolute;left:0;right:0;top:41%;text-align:center;font-style:normal;
+  color:rgba(230,241,255,.55);font-size:clamp(9px,2.1vmin,23px);font-weight:500;letter-spacing:.05em}
+
+/* ---- 設定按鈕 ---- */
+#gear{top:clamp(12px,4.4vmin,47px);right:clamp(18px,5.65vmin,61px);bottom:auto;left:auto;z-index:30;
+  width:clamp(64px,14.3vmin,155px);height:clamp(36px,7.9vmin,85px);padding:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--ui-panel);border:1px solid var(--ui-line);border-radius:4px;
+  color:var(--ui-ink);font-family:var(--ui-font);font-size:clamp(15px,5.46vmin,59px);
+  font-weight:700;letter-spacing:.06em;line-height:1;cursor:pointer}
+
+/* ---- 血條 ---- */
+#hp{left:clamp(20px,4.72vmin,51px);bottom:clamp(14px,4.07vmin,44px);top:auto;right:auto;
+  transform:none;background:none;border:0;border-radius:0;padding:0;gap:clamp(8px,1.85vmin,19px);
+  font-family:var(--ui-font);color:var(--ui-ink)}
+#hp>.hl{font-size:clamp(13px,3.05vmin,33px);font-weight:700;letter-spacing:.05em;
+  text-shadow:0 0 7px rgba(0,0,0,.65)}
+#hpb{width:clamp(118px,22.7vmin,245px);height:clamp(19px,3.7vmin,40px);border-radius:4px;
+  background:var(--ui-track);border:1px solid rgba(56,242,200,.8);
+  box-shadow:0 0 8px rgba(56,242,200,.45),inset 0 0 9px rgba(0,0,0,.8)}
+#hpf{background:linear-gradient(180deg,#6ef7d4,#25c9a2);box-shadow:0 0 9px rgba(56,242,200,.55)}
+#hp>.hpv{display:flex;align-items:baseline;gap:3px}
+#hpn{font-size:clamp(14px,3.6vmin,39px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+#hp .hv{font-style:normal;font-size:clamp(10px,2.05vmin,22px);font-weight:500;color:var(--ui-dim)}
+#stance{font-size:clamp(10px,1.6vmin,17px);font-weight:500;color:var(--ui-dim);letter-spacing:.08em}
+
+/* ---- 彈藥計數（右下） ---- */
+#ammobox{position:fixed;z-index:5;right:clamp(18px,5.65vmin,61px);bottom:clamp(14px,4.07vmin,44px);
+  width:clamp(104px,19.6vmin,212px);height:clamp(44px,7.3vmin,79px);box-sizing:border-box;
+  display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 10px 12px;overflow:hidden;
+  background:rgba(10,18,32,.4);border:1px solid rgba(56,242,200,.55);border-radius:4px;
+  font-family:var(--ui-font);color:var(--ui-ink);pointer-events:none}
+#ammobox::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,#8CFCE3,#22C9A3);box-shadow:0 0 7px rgba(56,242,200,.85)}
+#ammobox>.amd{position:absolute;left:9px;right:9px;bottom:5px;height:3px;border:0;
+  background:repeating-linear-gradient(90deg,rgba(56,242,200,.75) 0 6px,transparent 6px 12px)}
+#ammoname{font-size:clamp(9px,1.76vmin,19px);font-weight:700;letter-spacing:.16em;color:var(--ui-dim)}
+#ammobox>.amn{display:flex;align-items:baseline;gap:6px}
+#ammo{font-size:clamp(24px,4.3vmin,46px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+#ammoRes{font-size:clamp(11px,2.1vmin,22px);font-weight:500;color:var(--ui-dim)}
+
+/* ---- 右側功能圓鈕（開火／跳躍／蹲下／瞄準） ---- */
+#fire,#jump,#adsb,#crh{--bs:clamp(58px,14.8vmin,160px);width:var(--bs);height:var(--bs);padding:0;
+  border:1px solid rgba(255,255,255,.5);border-radius:50%;background:rgba(168,178,194,.26);
+  box-shadow:0 0 12px rgba(0,0,0,.4),inset 0 0 20px rgba(255,255,255,.07);
+  display:flex;align-items:center;justify-content:center;font-size:0;color:#fff}
+#fire svg,#jump svg,#adsb svg,#crh svg{display:block;height:auto;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.5))}
+#jump svg,#adsb svg,#crh svg{width:100%}
+#fire svg{width:78%}
+#fire{right:calc(env(safe-area-inset-right) + 20.7vmin - var(--bs)/2);
+  bottom:calc(env(safe-area-inset-bottom) + 28.4vmin - var(--bs)/2)}
+#adsb{right:calc(env(safe-area-inset-right) + 35.56vmin - var(--bs)/2);
+  bottom:calc(env(safe-area-inset-bottom) + 46.48vmin - var(--bs)/2)}
+#jump{right:calc(env(safe-area-inset-right) + 51.67vmin - var(--bs)/2);
+  bottom:calc(env(safe-area-inset-bottom) + 31.67vmin - var(--bs)/2)}
+#crh{right:calc(env(safe-area-inset-right) + 51.67vmin - var(--bs)/2);
+  bottom:calc(env(safe-area-inset-bottom) + 13.6vmin - var(--bs)/2)}
+#adsb.on,#crh.on{background:rgba(56,242,200,.26);border-color:var(--ui-teal);
+  box-shadow:0 0 12px rgba(56,242,200,.45),inset 0 0 18px rgba(56,242,200,.18)}
+/* 以下兩項不在設計稿中：外觀維持原樣，僅微調位置以免被新版面擋住 */
+#rld{--rs:clamp(32px,9vmin,96px);width:var(--rs);height:var(--rs);font-size:clamp(9px,1.35vmin,15px);
+  left:auto;top:auto;right:calc(env(safe-area-inset-right) + 39.5vmin - var(--rs)/2);
+  bottom:calc(env(safe-area-inset-bottom) + 16.2vmin - var(--rs)/2)}
+#kf{top:calc(max(12px,env(safe-area-inset-top)) + clamp(76px,13vmin,140px))}
+
+/* ---- 直向螢幕：設計稿是橫向 1920×1080，直向等比壓縮右側按鈕群並讓開底部兩角 ---- */
+@media (orientation:portrait){
+  #topleft{left:clamp(16px,4vmin,343px);top:clamp(10px,2.8vmin,37px);gap:clamp(8px,1.6vmin,33px)}
+  #top,#kill{font-size:clamp(16px,3.6vmin,50px)}
+  #enemy{right:clamp(14px,4.2vmin,60px);top:clamp(56px,15vmin,170px);width:clamp(72px,17vmin,224px);height:clamp(72px,17vmin,224px)}
+  #hp{bottom:clamp(14px,4.07vmin,44px)}
+  #fire{right:calc(env(safe-area-inset-right) + 10.8vmin - var(--bs)/2);
+    bottom:calc(env(safe-area-inset-bottom) + 41.8vmin - var(--bs)/2)}
+  #adsb{right:calc(env(safe-area-inset-right) + 18.5vmin - var(--bs)/2);
+    bottom:calc(env(safe-area-inset-bottom) + 60.8vmin - var(--bs)/2)}
+  #jump{right:calc(env(safe-area-inset-right) + 26.9vmin - var(--bs)/2);
+    bottom:calc(env(safe-area-inset-bottom) + 45.3vmin - var(--bs)/2)}
+  #crh{right:calc(env(safe-area-inset-right) + 26.9vmin - var(--bs)/2);
+    bottom:calc(env(safe-area-inset-bottom) + 27.3vmin - var(--bs)/2)}
+  #rld{right:calc(env(safe-area-inset-right) + 18.7vmin - var(--rs)/2);
+    bottom:calc(env(safe-area-inset-bottom) + 74vmin - var(--rs)/2)}
+  #kf{top:calc(max(12px,env(safe-area-inset-top)) + clamp(66px,11vmin,140px))}
+}
+
+/* ---- 中央準星（四臂＋中心點，擴散仍由遊戲控制） ---- */
+#xh{--xa:clamp(9px,1.39vmin,15px);--xd:clamp(3px,.46vmin,5px);--sp:10px}
+#xh i{background:#fff;box-shadow:0 0 4px rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.5)}
+#xh .a{width:2px;height:var(--xa);left:-1px;top:calc(-1 * (var(--sp) + var(--xa)))}
+#xh .b{width:2px;height:var(--xa);left:-1px;top:var(--sp)}
+#xh .c{height:2px;width:var(--xa);top:-1px;left:calc(-1 * (var(--sp) + var(--xa)))}
+#xh .d{height:2px;width:var(--xa);top:-1px;left:var(--sp)}
+#xh .e{width:var(--xd);height:var(--xd);left:calc(var(--xd)/-2);top:calc(var(--xd)/-2);border-radius:50%}
+
 </style>
 </head>
 <body>
 <div id="joy"><div id="knob"></div></div>
 <div id="pos" class="hud">載入中…</div>
-<button id="gear" class="hud btn" title="設定（遊玩中先按 Esc 釋放滑鼠）" aria-label="設定">⚙</button>
-<button id="jump" class="hud btn">跳躍</button>
+<button id="gear" class="hud btn" title="設定（遊玩中先按 Esc 釋放滑鼠）" aria-label="設定">設定</button>
+<button id="jump" class="hud btn" aria-label="跳躍"><svg viewBox="0 0 160 160" aria-hidden="true"><path d="M45 75 80 40 115 75 M80 40 V121" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 <div id="low"></div><div id="dmg"></div><div id="scope"></div>
 <div id="xh"><i class="a"></i><i class="b"></i><i class="c"></i><i class="d"></i><i class="e"></i></div>
 <div id="hm">✕</div><div id="dir"></div><div id="banner"></div>
-<div id="top" class="hud">第 1 波　擊殺 0　敵人 0</div>
+<div id="topleft"><span id="top">第 1 波</span><span id="kill">擊殺 0</span></div>
+<div id="enemy"><svg viewBox="0 0 208 208" aria-hidden="true"><circle class="tk" cx="104" cy="104" r="98"/><circle class="pg" cx="104" cy="104" r="98" pathLength="100"/></svg><b id="enn">0</b><i>剩餘敵人</i></div>
 <div id="kf"></div><div id="chat"></div>
-<div id="hp" class="hud"><div id="hpb"><i id="hpf"></i></div><b id="hpn">100</b><span id="ammo">30 / ∞</span><span id="stance"></span></div>
-<button id="fire" class="hud btn">開火</button><button id="rld" class="hud btn">換彈</button><button id="adsb" class="hud btn">瞄準</button><button id="crh" class="hud btn">蹲下</button>
+<div id="hp" class="hud"><span class="hl">HP</span><div id="hpb"><i id="hpf"></i></div><span class="hpv"><b id="hpn">100</b><i class="hv">/100</i></span><span id="stance"></span></div>
+<div id="ammobox"><span id="ammoname">SOLOV步槍</span><span class="amn"><b id="ammo">30</b><span id="ammoRes">/ ∞</span></span><i class="amd"></i></div>
+<button id="fire" class="hud btn" aria-label="開火"><svg viewBox="0 0 160 160" aria-hidden="true"><circle cx="57" cy="58" r="23" fill="#fff" stroke="#DEDEDE" stroke-width="4"/><rect x="38.3" y="57" width="83.3" height="46.1" rx="12" fill="#fff" stroke="#DEDEDE" stroke-width="4" transform="rotate(45 80 80)"/></svg></button><button id="rld" class="hud btn">換彈</button><button id="adsb" class="hud btn" aria-label="瞄準"><svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round"><path d="M50 30V0M50 70v30M30 50H0M70 50h30"/></g><circle cx="50" cy="50" r="4.5" fill="#fff"/></svg></button><button id="crh" class="hud btn" aria-label="蹲下"><svg viewBox="0 0 160 160" aria-hidden="true"><path d="M45 85 80 120 115 85 M80 120V39" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 <div id="overlay"><div class="card">
 <h1 id="ovh">🔫 SolovWar 槍戰</h1><p id="ovm"></p><p class="st" id="stats"></p>
 <p class="k" id="help">W A S D 移動　滑鼠轉向<br>空白鍵跳躍　Shift 衝刺<br>R 重新出生　Esc 暫停</p>
@@ -9899,16 +10044,22 @@ function botTick(b,dt){
   return true;
 }
 /* ---- 介面：HUD、橫幅、聊天、擊殺訊息、受擊方向、補給包 ---- */
-let hp=100,dmgA=0,suppA=0,lowT=0,heartT=0,queue=0,spawnT=0,breakT=-1,killerName='';
+let hp=100,dmgA=0,suppA=0,lowT=0,heartT=0,queue=0,spawnT=0,breakT=-1,killerName='',ennTot=1;
 let stKills=0,stHeads=0,stDmg=0,stShots=0,stHits=0,stHeadsHit=0;
-const HC2={top:'',hpn:-1,ammo:'',st:''};
+const HC2={top:'',kill:'',al:-1,hpn:-1,ammo:'',res:'',st:''};
 function hud(){
-  const al=E.reduce((n,e)=>n+!e.dead,0)+queue,top='第 '+wave+' 波　擊殺 '+kills+'　敵人 '+al;
+  const al=E.reduce((n,e)=>n+!e.dead,0)+queue,top='第 '+wave+' 波',kill='擊殺 '+kills;
   if(top!==HC2.top){HC2.top=top;$('top').textContent=top;}
+  if(kill!==HC2.kill){HC2.kill=kill;$('kill').textContent=kill;}
+  if(al!==HC2.al){HC2.al=al;$('enn').textContent=al;
+    $('enemy').style.setProperty('--p',Math.max(0,Math.min(100,al/ennTot*100)).toFixed(1));}
   const h=Math.max(0,Math.ceil(hp));
-  if(h!==HC2.hpn){HC2.hpn=h;$('hpn').textContent=h;$('hpf').style.width=Math.max(0,hp)+'%';$('hpf').style.background=hp>50?'#3ddc6b':hp>25?'#f0b429':'#ee4b4b';}
-  const am=rel>0?'換彈中…':ammo+' / ∞';
-  if(am!==HC2.ammo){HC2.ammo=am;$('ammo').textContent=am;$('ammo').style.color=(rel===0&&ammo<=6)?'#ffb04a':'';}
+  if(h!==HC2.hpn){HC2.hpn=h;$('hpn').textContent=h;$('hpf').style.width=Math.max(0,hp)+'%';$('hpf').style.background=hp>50?'linear-gradient(180deg,#6ef7d4,#25c9a2)':hp>25?'linear-gradient(180deg,#ffd06a,#e39a12)':'linear-gradient(180deg,#ff8073,#d63a2f)';}
+  const am=rel>0?'—':''+ammo,res=rel>0?'換彈中…':'/ ∞';
+  if(am!==HC2.ammo||res!==HC2.res){HC2.ammo=am;HC2.res=res;
+    $('ammo').textContent=am;$('ammoRes').textContent=res;
+    $('ammo').style.color=(rel===0&&ammo<=6)?'#ffb04a':'';
+    $('ammoRes').style.color=rel>0?'#ffb04a':'';}
 }
 function banner(t,sub){
   const b=$('banner');b.textContent=t;
@@ -10157,7 +10308,7 @@ function die(b,head){
   if(b&&Math.random()<.6)say(b,pick(['搞定一個','不錯嘛，可惜了','收工！','GG']),true);
 }
 function nextWave(){
-  wave++;queue=3+wave*2;spawnT=1.2;breakT=-1;
+  wave++;queue=3+wave*2;ennTot=Math.max(1,queue);spawnT=1.2;breakT=-1;
   if(wave>1)hp=Math.min(100,hp+40);
   ammo=MAG;rel=0;if(wave>cfg.best){cfg.best=wave;save();}
   banner('第 '+wave+' 波',queue+' 名敵人'+(wave>1?'　生命回復':''));
