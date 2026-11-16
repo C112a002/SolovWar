@@ -10221,7 +10221,8 @@ function frame(t){
   }
   resizeFov();placeCamera(dt);animateLamps(t/1000);
   renderer.render(scene,camera);
-  renderer.autoClear=false;renderer.clearDepth();camera.layers.set(1);renderer.render(scene,camera);camera.layers.set(0);renderer.autoClear=true;
+  /* 第二次只畫槍：r128 遇到純色背景會強制清畫面，所以暫時拿掉背景 */
+  {const bg=scene.background;scene.background=null;renderer.autoClear=false;renderer.clearDepth();camera.layers.set(1);renderer.render(scene,camera);camera.layers.set(0);renderer.autoClear=true;scene.background=bg;}
   if(cfg.showPos&&++frames%6===0)$('pos').textContent='X '+pos.x.toFixed(1)+'　Y '+pos.y.toFixed(1)+'　Z '+pos.z.toFixed(1);
 }
 syncUI();hud();
