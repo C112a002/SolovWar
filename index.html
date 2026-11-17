@@ -8681,6 +8681,7 @@ function bakeFaces(){
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
 document.body.appendChild(renderer.domElement);
+const muzzleAmbient=document.createElement('div');muzzleAmbient.id='muzzleAmbient';muzzleAmbient.style.cssText='position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .025s linear;';document.body.appendChild(muzzleAmbient);
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x07080c);
 scene.fog=new THREE.Fog(0x07080c,6,40);
@@ -8859,7 +8860,7 @@ function update(dt){
   const hs=Math.hypot(vel.x,vel.z);
   pNoise=onGround?clamp((hs-1.3)/4.6,0,1)*(1-.7*crouchT):0;
   if(onGround&&hs>1.3){stepAcc+=hs*dt;const st=wantRun?2.1:2.6;if(stepAcc>st){stepAcc=0;snd('step',(.25+.35*pNoise)*(1-.6*crouchT));}}
-  bobP+=hs*dt*(wantRun?1.5:1.15);
+  bobP+=hs*dt*(wantRun?1.68:1.28);
 }
 function resize(){
   renderer.setSize(innerWidth,innerHeight);
@@ -9115,12 +9116,13 @@ const laserRing=new THREE.Mesh(new THREE.TorusGeometry(.012,.0027,6,16),new THRE
 laserRing.rotation.y=Math.PI/2;laserRing.layers.set(1);laserRing.renderOrder=14;laserPort.add(laserRing);
 const laserLens=new THREE.Mesh(new THREE.SphereGeometry(.0065,10,8),new THREE.MeshBasicMaterial({color:0xff2638,transparent:true,opacity:.95,depthTest:false,toneMapped:false}));
 laserLens.layers.set(1);laserLens.renderOrder=15;laserPort.add(laserLens);
+const laserLensGlow=new THREE.Mesh(new THREE.SphereGeometry(.024,12,8),new THREE.MeshBasicMaterial({color:0xff1830,transparent:true,opacity:.24,blending:THREE.AdditiveBlending,depthTest:false,depthWrite:false,toneMapped:false}));
+laserLensGlow.layers.set(1);laserLensGlow.renderOrder=14;laserPort.add(laserLensGlow);
 const laserRay=new THREE.Raycaster();laserRay.layers.set(0);laserRay.far=35;
-const laserCore=new THREE.Mesh(new THREE.CylinderGeometry(.003,.003,1,6),new THREE.MeshBasicMaterial({color:0xff2438,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false,toneMapped:false}));
-const laserGlow=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,1,6),new THREE.MeshBasicMaterial({color:0xff142c,transparent:true,opacity:.28,blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false,toneMapped:false}));
-const laserImpact=new THREE.Mesh(new THREE.SphereGeometry(1,8,8),new THREE.MeshBasicMaterial({color:0xff2338,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false,toneMapped:false}));
-for(const m of[laserCore,laserGlow,laserImpact]){m.layers.set(0);m.visible=false;m.frustumCulled=false;scene.add(m);}
-const laserUp=new THREE.Vector3(0,1,0),laserDir=new THREE.Vector3(),laserFrom=new THREE.Vector3(),laserTo=new THREE.Vector3(),laserMid=new THREE.Vector3();
+const laserImpact=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshBasicMaterial({color:0xff2638,transparent:true,opacity:.98,blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false,toneMapped:false}));
+const laserHalo=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshBasicMaterial({color:0xff1025,transparent:true,opacity:.32,blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false,toneMapped:false}));
+for(const m of[laserImpact,laserHalo]){m.layers.set(0);m.visible=false;m.frustumCulled=false;scene.add(m);}
+const laserDir=new THREE.Vector3(),laserFrom=new THREE.Vector3();
 let laserScan=0,laserRange=35;
 {const am=new THREE.AmbientLight(0xffffff,.7),d1=new THREE.DirectionalLight(0xfff2e0,1),d2=new THREE.DirectionalLight(0x8aa4ff,.35);
  d1.position.set(-.7,1,.6);d2.position.set(.8,-.2,.4);
@@ -9169,6 +9171,8 @@ function shoot(){
   snd('shot',1);ejectShell();
   gun.updateMatrixWorld(true);camera.updateMatrixWorld(true);const muzzleWorld=mflash.getWorldPosition(new THREE.Vector3());
   muzzleFlashView.position.copy(camera.worldToLocal(muzzleWorld.clone()));muzzleFlashView.visible=true;muzzleFlashView.scale.setScalar(.9+Math.random()*.35);muzzleFlashMat.opacity=.95;muzzleCoreMat.opacity=1;
+  const flashNdc=muzzleWorld.clone().project(camera),flashX=(flashNdc.x+1)*50,flashY=(1-flashNdc.y)*50;
+  muzzleAmbient.style.background='radial-gradient(ellipse 38vw 34vh at '+flashX+'% '+flashY+'%,rgba(255,151,70,.30) 0%,rgba(255,104,36,.13) 42%,rgba(255,90,32,.035) 72%,transparent 100%)';muzzleAmbient.style.opacity='1';
   fxMuzzle(muzzleWorld.x+dx*.08,muzzleWorld.y+dy*.08,muzzleWorld.z+dz*.08,dx,dy,dz);
   noiseEvent(pos.x,pos.y+1.2,pos.z,1,null);lastShotT=gt;
   recP=Math.min(.14,recP+.0095+Math.random()*.006+heat*.0016)*(1-adsT*.35)+recP*0;recY+=(Math.random()-.5)*.0075*(1+heat*.2);
@@ -9187,12 +9191,12 @@ function gunTick(dt){
   cd-=dt;
   if(rel>0){if((rel-=dt)<=0){rel=0;ammo=MAG;hud();}}
   else if(firing&&cd<=0&&sprT<.6){if(ammo>0){ammo--;cd=.092;shoot();hud();}else{snd('dry',.9);cd=.3;reload();}}
-  kick=Math.max(0,kick-dt*13);if((flT-=dt)<=0){mflash.visible=false;muzzleFlashView.visible=false;muzzleFlashMat.opacity=0;muzzleCoreMat.opacity=0;}else{const f=flT/.14;mflash.scale.setScalar(.62+.8*f);muzzleFlashView.scale.multiplyScalar(.98);muzzleFlashMat.opacity=.95*f;muzzleCoreMat.opacity=f;}
+  kick=Math.max(0,kick-dt*13);if((flT-=dt)<=0){mflash.visible=false;muzzleFlashView.visible=false;muzzleFlashMat.opacity=0;muzzleCoreMat.opacity=0;muzzleAmbient.style.opacity='0';}else{const f=flT/.14;mflash.scale.setScalar(.62+.8*f);muzzleFlashView.scale.multiplyScalar(.98);muzzleFlashMat.opacity=.95*f;muzzleCoreMat.opacity=f;muzzleAmbient.style.opacity=String(f*.82);}
   sprT+=((sprinting?1:0)-sprT)*Math.min(1,dt*8);
   /* 視角轉動造成的槍枝慣性 */
   const dyw=angDiff(yaw,lastYaw),dpt=pitch-lastPit;lastYaw=yaw;lastPit=pitch;
   swX+=(clamp(dyw*.7,-.08,.08)-swX)*Math.min(1,dt*9);swY+=(clamp(-dpt*.7,-.06,.06)-swY)*Math.min(1,dt*9);
-  const hs=Math.hypot(vel.x,vel.z)*(onGround?1:.2),ba=hs*.0016*(1-adsT*.85),b1=Math.sin(bobP*.95),b2=Math.abs(Math.sin(bobP*.95));
+  const hs=Math.hypot(vel.x,vel.z)*(onGround?1:.22),ba=hs*.0046*(1-adsT*.76)*(sprinting?1.12:1),b1=Math.sin(bobP*.95),b2=Math.abs(Math.sin(bobP*.95));
   const rp=rel>0?1-rel/relTot:0;
   let x=lerp(GB.x,GA.x,adsT)+b1*ba+swX*.5,y=lerp(GB.y,GA.y,adsT)+b2*ba*1.3+swY*.5+Math.sin(gunT*1.3)*.0011,z=lerp(GB.z,GA.z,adsT)+kick*.045*(1-adsT*.5);
   let rx=kick*.045*(1-adsT*.5)+swY*.6,ry=-swX*.8,rz=b1*ba*.8;
@@ -10395,30 +10399,38 @@ function tick(dt){
   if(st!==HC2.st){HC2.st=st;$('stance').textContent=st;}
 }
 function placeCamera(dt){
-  const hs=Math.hypot(vel.x,vel.z),ba=onGround?clamp(hs/6,0,1)*lerp(1,.3,adsT)*lerp(1,.6,crouchT):0,b1=Math.sin(bobP*.95);
+  const hs=Math.hypot(vel.x,vel.z),move=onGround?clamp(hs/5.2,0,1):clamp(hs/6,0,1)*.16;
+  const gait=move*lerp(1,.48,adsT)*lerp(1,.58,crouchT),bobAmp=(sprinting?.075:.05)*gait,bobWave=Math.sin(bobP*1.9),bobSide=Math.sin(bobP*.95)*.022*gait;
   landKick=Math.max(0,landKick-dt*.9);
-  let ey=pos.y+eyeH()+Math.abs(b1)*.03*ba-landKick*.7,roll=b1*.0045*ba-strafeV*.012*(1-adsT*.6),px=pitch+recP,py=yaw+recY;
+  let ey=pos.y+eyeH()+bobWave*bobAmp+Math.abs(bobWave)*.012*gait-landKick*.7;
+  let roll=bobWave*.012*gait-strafeV*.016*(1-adsT*.65),px=pitch+recP,py=yaw+recY;
+  const swayX=Math.cos(yaw)*bobSide,swayZ=-Math.sin(yaw)*bobSide;
   const sh=shakeA*shakeA*.035;
   if(sh>0){px+=(Math.random()-.5)*sh;py+=(Math.random()-.5)*sh;roll+=(Math.random()-.5)*sh*.8;}
   if(dead){const e=1-Math.pow(1-Math.min(1,deathT/.7),3);ey-=(eyeH()-.28)*e;roll+=.9*e;px=lerp(px,-.25,e);}
-  camera.position.set(pos.x,ey,pos.z);camera.rotation.set(px,py,roll);
+  camera.position.set(pos.x+swayX,ey,pos.z+swayZ);camera.rotation.set(px,py,roll);
 }
 function laserTick(dt){
   const on=active&&!dead;
-  laserPort.visible=on;laserCore.visible=on;laserGlow.visible=on;laserImpact.visible=false;
+  laserPort.visible=on;laserImpact.visible=false;laserHalo.visible=false;
   if(!on)return;
-  laserLens.material.opacity=.78+.22*(.5+.5*Math.sin(gt*9));
-  if((laserScan-=dt)>0)return;laserScan=.05;
+  laserLens.material.opacity=.76+.24*(.5+.5*Math.sin(gt*8));
+  laserLensGlow.material.opacity=.15+.12*(.5+.5*Math.sin(gt*6.5));
+  if((laserScan-=dt)>0)return;laserScan=.045;
   camera.updateMatrixWorld(true);gun.updateMatrixWorld(true);
   laserFrom.copy(laserPort.getWorldPosition(_v));camera.getWorldDirection(laserDir);
   laserRay.set(laserFrom,laserDir);
-  const roots=scene.children.filter(o=>o!==camera&&o!==laserCore&&o!==laserGlow&&o!==laserImpact&&o.type!=='Sprite');
+  const roots=scene.children.filter(o=>o!==camera&&o!==laserImpact&&o!==laserHalo&&o.type!=='Sprite');
   const hits=laserRay.intersectObjects(roots,true);const hit=hits.find(h=>h.object.visible&&h.distance>.08);
-  laserRange=hit?Math.max(.12,hit.distance):35;
-  laserTo.copy(laserFrom).addScaledVector(laserDir,laserRange);laserMid.copy(laserFrom).add(laserTo).multiplyScalar(.5);
-  for(const m of[laserCore,laserGlow]){m.position.copy(laserMid);m.quaternion.setFromUnitVectors(laserUp,laserDir);m.scale.set(1,laserRange,1);}
-  if(hit){laserImpact.visible=true;laserImpact.position.copy(hit.point);if(hit.face)laserImpact.position.addScaledVector(hit.face.normal,.004);laserImpact.scale.setScalar(clamp(hit.distance*.003,.012,.04));}
+  if(!hit)return;
+  const n=hit.face?hit.face.normal:_v2.set(0,1,0);
+  laserImpact.visible=true;laserHalo.visible=true;
+  laserImpact.position.copy(hit.point).addScaledVector(n,.009);
+  laserHalo.position.copy(hit.point).addScaledVector(n,.012);
+  laserImpact.scale.setScalar(clamp(hit.distance*.00115,.007,.016));
+  laserHalo.scale.setScalar(clamp(hit.distance*.0035,.018,.05));
 }
+
 function frame(t){
   requestAnimationFrame(frame);
   const dt=Math.min((t-last)/1000,.05);last=t;
