@@ -75,12 +75,12 @@ body.aim #scope{opacity:1}
 .chl{animation:cho 9s forwards}.chl b{color:#ff8a7a;font-weight:600}.chl.sys{color:#ffd84a}
 @keyframes cho{0%,88%{opacity:1}100%{opacity:0}}
 body:not(.showkf) #kf,body:not(.showchat) #chat{display:none}
-#fire,#rld,#adsb,#crh{display:none;border-radius:50%;padding:0;border:2px solid rgba(255,255,255,.6);background:rgba(220,50,50,.45);font-size:15px}
+#fire,#fireDirect,#rld,#adsb,#crh{display:none;border-radius:50%;padding:0;border:2px solid rgba(255,255,255,.6);background:rgba(220,50,50,.45);font-size:15px}
 #fire{right:max(26px,env(safe-area-inset-right));bottom:max(122px,calc(env(safe-area-inset-bottom) + 112px));width:84px;height:84px}
 #rld{right:max(118px,calc(env(safe-area-inset-right) + 108px));bottom:max(34px,env(safe-area-inset-bottom));width:56px;height:56px;background:rgba(255,255,255,.22);font-size:13px}
 #adsb{right:max(122px,calc(env(safe-area-inset-right) + 112px));bottom:max(134px,calc(env(safe-area-inset-bottom) + 124px));width:56px;height:56px;background:rgba(255,255,255,.22);font-size:13px}
 #crh{right:max(184px,calc(env(safe-area-inset-right) + 174px));bottom:max(34px,env(safe-area-inset-bottom));width:56px;height:56px;background:rgba(255,255,255,.22);font-size:13px}
-body.touch.playing #fire,body.touch.playing #rld,body.touch.playing #adsb,body.touch.playing #crh{display:block}
+body.touch.playing #fire,body.touch.playing #fireDirect,body.touch.playing #rld,body.touch.playing #adsb,body.touch.playing #crh{display:block}
 #adsb.on,#crh.on{background:rgba(61,123,255,.6)}
 
 /* ════════════════════════════════════════════════════════════════
@@ -170,14 +170,15 @@ body.touch.playing #fire,body.touch.playing #rld,body.touch.playing #adsb,body.t
 #ammoRes{font-size:clamp(11px,2.1vmin,22px);font-weight:500;color:var(--ui-dim)}
 
 /* ---- 右側功能圓鈕（開火／跳躍／蹲下／瞄準） ---- */
-#fire,#jump,#adsb,#crh{--bs:clamp(58px,14.8vmin,160px);width:var(--bs);height:var(--bs);padding:0;
+#fire,#fireDirect,#jump,#adsb,#crh{--bs:clamp(58px,14.8vmin,160px);width:var(--bs);height:var(--bs);padding:0;
   border:1px solid rgba(255,255,255,.5);border-radius:50%;background:rgba(168,178,194,.26);
   box-shadow:0 0 12px rgba(0,0,0,.4),inset 0 0 20px rgba(255,255,255,.07);
   display:flex;align-items:center;justify-content:center;font-size:0;color:#fff}
-#fire svg,#jump svg,#adsb svg,#crh svg{display:block;height:auto;
+#fire svg,#fireDirect svg,#jump svg,#adsb svg,#crh svg{display:block;height:auto;
   filter:drop-shadow(0 0 4px rgba(255,255,255,.5))}
 #jump svg,#adsb svg,#crh svg{width:100%}
-#fire svg{width:78%}
+#fire svg,#fireDirect svg{width:78%}
+#fireDirect{left:max(12px,env(safe-area-inset-left));top:clamp(60px,8vmin,100px)}
 #fire{right:calc(env(safe-area-inset-right) + 20.7vmin - var(--bs)/2);
   bottom:calc(env(safe-area-inset-bottom) + 28.4vmin - var(--bs)/2)}
 #adsb{right:calc(env(safe-area-inset-right) + 35.56vmin - var(--bs)/2);
@@ -237,11 +238,11 @@ body.touch.playing #fire,body.touch.playing #rld,body.touch.playing #adsb,body.t
 <div id="kf"></div><div id="chat"></div>
 <div id="hp" class="hud"><span class="hl">HP</span><div id="hpb"><i id="hpf"></i></div><span class="hpv"><b id="hpn">100</b><i class="hv">/100</i></span><span id="stance"></span></div>
 <div id="ammobox"><span id="ammoname">SOLOV步槍</span><span class="amn"><b id="ammo">30</b><span id="ammoRes">/ ∞</span></span><i class="amd"></i></div>
-<button id="fire" class="hud btn" aria-label="開火"><svg viewBox="0 0 160 160" aria-hidden="true"><circle cx="57" cy="58" r="23" fill="#fff" stroke="#DEDEDE" stroke-width="4"/><rect x="38.3" y="57" width="83.3" height="46.1" rx="12" fill="#fff" stroke="#DEDEDE" stroke-width="4" transform="rotate(45 80 80)"/></svg></button><button id="rld" class="hud btn">換彈</button><button id="adsb" class="hud btn" aria-label="瞄準"><svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round"><path d="M50 30V0M50 70v30M30 50H0M70 50h30"/></g><circle cx="50" cy="50" r="4.5" fill="#fff"/></svg></button><button id="crh" class="hud btn" aria-label="蹲下"><svg viewBox="0 0 160 160" aria-hidden="true"><path d="M45 85 80 120 115 85 M80 120V39" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button id="fireDirect" class="hud btn" aria-label="直接開火"><svg viewBox="0 0 160 160" aria-hidden="true"><circle cx="57" cy="58" r="23" fill="#fff" stroke="#DEDEDE" stroke-width="4"/><rect x="38.3" y="57" width="83.3" height="46.1" rx="12" fill="#fff" stroke="#DEDEDE" stroke-width="4" transform="rotate(45 80 80)"/></svg></button><button id="fire" class="hud btn" aria-label="開鏡開火"><svg viewBox="0 0 160 160" aria-hidden="true"><circle cx="57" cy="58" r="23" fill="#fff" stroke="#DEDEDE" stroke-width="4"/><rect x="38.3" y="57" width="83.3" height="46.1" rx="12" fill="#fff" stroke="#DEDEDE" stroke-width="4" transform="rotate(45 80 80)"/></svg></button><button id="rld" class="hud btn">換彈</button><button id="adsb" class="hud btn" aria-label="瞄準"><svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round"><path d="M50 30V0M50 70v30M30 50H0M70 50h30"/></g><circle cx="50" cy="50" r="4.5" fill="#fff"/></svg></button><button id="crh" class="hud btn" aria-label="蹲下"><svg viewBox="0 0 160 160" aria-hidden="true"><path d="M45 85 80 120 115 85 M80 120V39" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 <div id="overlay"><div class="card">
 <h1 id="ovh">🔫 SolovWar 槍戰</h1><p id="ovm"></p><p class="st" id="stats"></p>
 <p class="k" id="help">W A S D 移動　滑鼠轉向<br>空白鍵跳躍　Shift 衝刺<br>R 重新出生　Esc 暫停</p>
-<p class="t">左半邊拖曳：移動（拖到最外圈會衝刺）<br>右半邊滑動：轉向<br>按住「開火」可邊射邊轉向<br>右下按鈕：開火／換彈／跳躍／蹲下／瞄準</p>
+<p class="t">左半邊拖曳：移動（拖到最外圈會衝刺）<br>右半邊滑動：轉向<br>左上按鈕：直接開火<br>右下開火鍵：按住開鏡並連射／換彈／跳躍／蹲下</p>
 <button id="start">開始戰鬥</button>
 </div></div>
 <div id="settings"><div class="card panel">
@@ -9130,7 +9131,7 @@ let laserScan=0,laserRange=35;
  for(const l of[d1,d2]){l.target.position.set(0,-.1,-1);camera.add(l.target);}}
 const GB={x:.215,y:-.19,z:-.5},GA={x:0,y:-.077,z:-.3};
 const MAG=30,TR_TOTAL=0;
-let ammo=MAG,rel=0,relTot=1.9,firing=false,fireId=null,cd=0,kick=0,flT=0,heat=0,hmA=0,swX=0,swY=0,lastYaw=0,lastPit=0,gunT=0,sprT=0,gunLt=1;
+let ammo=MAG,rel=0,relTot=1.9,firing=false,cd=0,kick=0,flT=0,heat=0,hmA=0,swX=0,swY=0,lastYaw=0,lastPit=0,gunT=0,sprT=0,gunLt=1;
 let shots=0,hitsN=0,headsN=0;
 function spreadNow(){
   const hs=Math.hypot(vel.x,vel.z);
@@ -9172,7 +9173,7 @@ function shoot(){
   gun.updateMatrixWorld(true);camera.updateMatrixWorld(true);const muzzleWorld=mflash.getWorldPosition(new THREE.Vector3());
   muzzleFlashView.position.copy(camera.worldToLocal(muzzleWorld.clone()));muzzleFlashView.visible=true;muzzleFlashView.scale.setScalar(.9+Math.random()*.35);muzzleFlashMat.opacity=.95;muzzleCoreMat.opacity=1;
   const flashNdc=muzzleWorld.clone().project(camera),flashX=(flashNdc.x+1)*50,flashY=(1-flashNdc.y)*50;
-  muzzleAmbient.style.background='radial-gradient(ellipse 38vw 34vh at '+flashX+'% '+flashY+'%,rgba(255,151,70,.30) 0%,rgba(255,104,36,.13) 42%,rgba(255,90,32,.035) 72%,transparent 100%)';muzzleAmbient.style.opacity='1';
+  muzzleAmbient.style.background='radial-gradient(ellipse 152vw 136vh at '+flashX+'% '+flashY+'%,rgba(255,151,70,.30) 0%,rgba(255,104,36,.13) 42%,rgba(255,90,32,.035) 72%,transparent 100%)';muzzleAmbient.style.opacity='1';
   fxMuzzle(muzzleWorld.x+dx*.08,muzzleWorld.y+dy*.08,muzzleWorld.z+dz*.08,dx,dy,dz);
   noiseEvent(pos.x,pos.y+1.2,pos.z,1,null);lastShotT=gt;
   recP=Math.min(.14,recP+.0095+Math.random()*.006+heat*.0016)*(1-adsT*.35)+recP*0;recY+=(Math.random()-.5)*.0075*(1+heat*.2);
@@ -10172,9 +10173,10 @@ function showStats(){
 }
 /* ---- 輸入：鍵盤、滑鼠（含無法鎖定滑鼠時的拖曳轉向）、觸控、設定面板 ---- */
 let lockFail=false,joyId=null,joyO=null,lookId=null,lx=0,ly=0,setOpen=false,wasActive=false,capture=null;
+const touchFireModes=new Map();
 function setActive(on){
   active=on;document.body.classList.toggle('playing',on);$('overlay').style.display=on?'none':'flex';
-  if(!on){firing=false;adsMouse=false;}
+  if(!on){firing=false;adsMouse=false;touchFireModes.clear();}
 }
 function lockNote(){if(active&&!dead)banner('無法鎖定滑鼠','按住滑鼠左鍵或右鍵並移動來轉向（Esc 暫停）');}
 function lockPointer(){
@@ -10228,7 +10230,7 @@ addEventListener('keydown',e=>{
   }
 });
 addEventListener('keyup',e=>{keys[norm(e.code)]=false;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;firing=false;adsMouse=false;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;firing=false;adsMouse=false;touchFireModes.clear();});
 /* 觸控：左半邊虛擬搖桿、右半邊轉向、按鈕開火／換彈／跳躍／蹲下／瞄準 */
 function resetJoy(){joyId=null;mv.x=mv.y=0;mv.run=false;$('joy').style.display='none';$('knob').style.transform='';}
 addEventListener('touchstart',e=>{
@@ -10258,7 +10260,7 @@ addEventListener('touchmove',e=>{
 },{passive:false});
 const endTouch=e=>{
   for(const t of e.changedTouches){
-    if(t.identifier===fireId){firing=false;fireId=null;}
+    if(touchFireModes.has(t.identifier)){touchFireModes.delete(t.identifier);firing=touchFireModes.size>0;adsMouse=Array.from(touchFireModes.values()).some(Boolean);}
     if(t.identifier===joyId)resetJoy();
     if(t.identifier===lookId)lookId=null;
   }
@@ -10268,11 +10270,14 @@ const jb=$('jump');
 jb.addEventListener('touchstart',e=>{jumpHeld=true;e.preventDefault();},{passive:false});
 jb.addEventListener('touchend',()=>{jumpHeld=false;});
 jb.addEventListener('touchcancel',()=>{jumpHeld=false;});
-$('fire').addEventListener('touchstart',e=>{
-  const t=e.changedTouches[0];firing=true;fireId=t.identifier;
+function beginTouchFire(e,aimFire){
+  const t=e.changedTouches[0];touchFireModes.set(t.identifier,!!aimFire);
+  firing=true;adsMouse=Array.from(touchFireModes.values()).some(Boolean);
   if(lookId===null){lookId=t.identifier;lx=t.clientX;ly=t.clientY;}
   e.preventDefault();
-},{passive:false});
+}
+$('fire').addEventListener('touchstart',e=>beginTouchFire(e,true),{passive:false});
+$('fireDirect').addEventListener('touchstart',e=>beginTouchFire(e,false),{passive:false});
 $('rld').addEventListener('touchstart',e=>{reload();e.preventDefault();},{passive:false});
 $('adsb').addEventListener('touchstart',e=>{adsBtn=!adsBtn;$('adsb').classList.toggle('on',adsBtn);e.preventDefault();},{passive:false});
 $('crh').addEventListener('touchstart',e=>{crouchBtn=!crouchBtn;$('crh').classList.toggle('on',crouchBtn);e.preventDefault();},{passive:false});
