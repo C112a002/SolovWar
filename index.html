@@ -242,7 +242,7 @@ body.touch.playing #fire,body.touch.playing #fireDirect,body.touch.playing #rld,
 <div id="overlay"><div class="card">
 <h1 id="ovh">🔫 SolovWar 槍戰</h1><p id="ovm"></p><p class="st" id="stats"></p>
 <p class="k" id="help">W A S D 移動　滑鼠轉向<br>空白鍵跳躍　Shift 衝刺<br>R 重新出生　Esc 暫停</p>
-<p class="t">左半邊拖曳：移動（拖到最外圈會衝刺）<br>右半邊滑動：轉向<br>左上按鈕：直接開火<br>右下開火鍵：按住開鏡並連射／換彈／跳躍／蹲下</p>
+<p class="t">左半邊拖曳：移動（拖到最外圈會衝刺）<br>右半邊滑動：轉向<br>左上按鈕：直接開火<br>右下開火鍵：按住先開鏡，完成後連射／換彈／跳躍／蹲下</p>
 <button id="start">開始戰鬥</button>
 </div></div>
 <div id="settings"><div class="card panel">
@@ -8526,6 +8526,7 @@ const D6=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],D4=[[1,0],[-1,0],[
       if(j>=0&&NAV.usable[j]&&!reserved[j]&&tryPlace(a,y,c,srnd()<.6?1+((srnd()*3)|0):4+((srnd()*3)|0)))extra++;}}
   }
 })();
+const BARRELS=PROPS.filter(p=>p.k>=4);
 /* ---- 燈具與烘焙光照：牆邊掛燈、洪水填充顏色光、頂點平滑光＋環境光遮蔽 ---- */
 const LAMPS=[];                    /* {x,y,z,c:[r,g,b],dx,dz,ph} */
 const AMB=[.25,.27,.33];
@@ -8726,7 +8727,7 @@ function rebuildGlass(){
   glassMesh=new THREE.Mesh(g,glassMat);glassMesh.frustumCulled=false;glassMesh.renderOrder=2;scene.add(glassMesh);
 }
 rebuildGlass();
-/* 油桶：圓柱，顏色依所在位置的光照 */
+/* 油桶：圓柱外觀與全周側面／頂底面碰撞 */
 (function(){
   const geo=new THREE.CylinderGeometry(.4,.43,.96,12),tex=[0,1,2].map(i=>({side:ctex(paintBarrel(i,0)),cap:ctex(paintBarrel(i,1))}));
   for(const p of PROPS){
@@ -8757,14 +8758,26 @@ function animateLamps(t){
 /* ---- 射線：體素牆（DDA）與方塊 ---- */
 const wn=[0,0,0],HC={x:0,y:0,z:0,g:0};
 let navVer=0;
+function rayBarrel(ox,oy,oz,dx,dy,dz,max,p){
+  const cx=p.x+.5,cz=p.z+.5,r=.42,bottom=p.y,top=p.y+.96;
+  let best=max,normal=[0,0,0],found=false;
+  const accept=(t,nx,ny,nz)=>{if(t>=0&&t<=best){best=t;normal=[nx,ny,nz];found=true;}};
+  const qa=dx*dx+dz*dz,qb=2*((ox-cx)*dx+(oz-cz)*dz),qc=(ox-cx)*(ox-cx)+(oz-cz)*(oz-cz)-r*r,disc=qb*qb-4*qa*qc;
+  if(qa>1e-10&&disc>=0){const root=Math.sqrt(disc);for(const t of[(-qb-root)/(2*qa),(-qb+root)/(2*qa)]){const yh=oy+dy*t;if(yh>=bottom&&yh<=top){const nx=ox+dx*t-cx,nz=oz+dz*t-cz,len=Math.hypot(nx,nz)||1;accept(t,nx/len,0,nz/len);}}}
+  if(Math.abs(dy)>1e-10){for(const cap of[{y:bottom,n:-1},{y:top,n:1}]){const t=(cap.y-oy)/dy,xh=ox+dx*t-cx,zh=oz+dz*t-cz;if(xh*xh+zh*zh<=r*r)accept(t,0,cap.n,0);}}
+  return found?{t:best,nx:normal[0],ny:normal[1],nz:normal[2]}:null;
+}
 function rayVox(ox,oy,oz,dx,dy,dz,max,vis){
   let x=Math.floor(ox),y=Math.floor(oy),z=Math.floor(oz);
   const sx=dx>0?1:-1,sy=dy>0?1:-1,sz=dz>0?1:-1,ax=Math.abs(1/(dx||1e-9)),ay=Math.abs(1/(dy||1e-9)),az=Math.abs(1/(dz||1e-9));
   let tx=(dx>0?x+1-ox:ox-x)*ax,ty=(dy>0?y+1-oy:oy-y)*ay,tz=(dz>0?z+1-oz:oz-z)*az,t=0;
   wn[0]=wn[1]=wn[2]=0;
   while(t<max){
-    const g=inb(x,y,z)?grid[ix(x,y,z)]:0;
-    if(g&&!(vis&&g===2)){HC.x=x;HC.y=y;HC.z=z;HC.g=g;return t;}
+    const ci=inb(x,y,z)?ix(x,y,z):-1,g=ci>=0?grid[ci]:0;
+    if(g===3&&ci>=0&&PK[ci]>=4){
+      const p=PROPS.find(q=>q.x===x&&q.y===y&&q.z===z),bh=p&&rayBarrel(ox,oy,oz,dx,dy,dz,max,p),exit=Math.min(tx,ty,tz,max);
+      if(bh&&bh.t>=t-1e-6&&bh.t<=exit+1e-6){HC.x=x;HC.y=y;HC.z=z;HC.g=g;wn[0]=bh.nx;wn[1]=bh.ny;wn[2]=bh.nz;return bh.t;}
+    }else if(g&&!(vis&&g===2)){HC.x=x;HC.y=y;HC.z=z;HC.g=g;return t;}
     if(tx<ty&&tx<tz){t=tx;tx+=ax;x+=sx;wn[0]=-sx;wn[1]=wn[2]=0;}
     else if(ty<tz){t=ty;ty+=ay;y+=sy;wn[1]=-sy;wn[0]=wn[2]=0;}
     else{t=tz;tz+=az;z+=sz;wn[2]=-sz;wn[0]=wn[1]=0;}
@@ -8809,7 +8822,15 @@ respawn();
 const hit=(x,y,z,h)=>{
   h=h||H;
   const x0=Math.floor(x-R),x1=Math.floor(x+R),y0=Math.floor(y),y1=Math.floor(y+h-.001),z0=Math.floor(z-R),z1=Math.floor(z+R);
-  for(let a=x0;a<=x1;a++)for(let b=y0;b<=y1;b++)for(let c=z0;c<=z1;c++)if(solid(a,b,c))return true;
+  for(let a=x0;a<=x1;a++)for(let b=y0;b<=y1;b++)for(let c=z0;c<=z1;c++){
+    const i=inb(a,b,c)?ix(a,b,c):-1,g=i>=0?grid[i]:0;
+    if(g&&!(g===3&&PK[i]>=4))return true;
+  }
+  for(const p of BARRELS){
+    if(y>=p.y+.96||y+h<=p.y)continue;
+    const dx=Math.max(Math.abs(x-(p.x+.5))-R,0),dz=Math.max(Math.abs(z-(p.z+.5))-R,0);
+    if(dx*dx+dz*dz<.42*.42)return true;
+  }
   return false;
 };
 const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',run:'ShiftLeft',crouch:'KeyC',aim:'KeyV',respawn:'KeyT',reload:'KeyR'};
@@ -9191,7 +9212,7 @@ function gunTick(dt){
   /* 開火 */
   cd-=dt;
   if(rel>0){if((rel-=dt)<=0){rel=0;ammo=MAG;hud();}}
-  else if(firing&&cd<=0&&sprT<.6){if(ammo>0){ammo--;cd=.092;shoot();hud();}else{snd('dry',.9);cd=.3;reload();}}
+  else if((firing||(touchAimFire&&adsT>=.999))&&cd<=0&&sprT<.6){if(ammo>0){ammo--;cd=.092;shoot();hud();}else{snd('dry',.9);cd=.3;reload();}}
   kick=Math.max(0,kick-dt*13);if((flT-=dt)<=0){mflash.visible=false;muzzleFlashView.visible=false;muzzleFlashMat.opacity=0;muzzleCoreMat.opacity=0;muzzleAmbient.style.opacity='0';}else{const f=flT/.14;mflash.scale.setScalar(.62+.8*f);muzzleFlashView.scale.multiplyScalar(.98);muzzleFlashMat.opacity=.95*f;muzzleCoreMat.opacity=f;muzzleAmbient.style.opacity=String(f*.82);}
   sprT+=((sprinting?1:0)-sprT)*Math.min(1,dt*8);
   /* 視角轉動造成的槍枝慣性 */
@@ -10173,10 +10194,10 @@ function showStats(){
 }
 /* ---- 輸入：鍵盤、滑鼠（含無法鎖定滑鼠時的拖曳轉向）、觸控、設定面板 ---- */
 let lockFail=false,joyId=null,joyO=null,lookId=null,lx=0,ly=0,setOpen=false,wasActive=false,capture=null;
-const touchFireModes=new Map();
+const touchFireModes=new Map();let touchAimFire=false;
 function setActive(on){
   active=on;document.body.classList.toggle('playing',on);$('overlay').style.display=on?'none':'flex';
-  if(!on){firing=false;adsMouse=false;touchFireModes.clear();}
+  if(!on){firing=false;adsMouse=false;touchFireModes.clear();touchAimFire=false;}
 }
 function lockNote(){if(active&&!dead)banner('無法鎖定滑鼠','按住滑鼠左鍵或右鍵並移動來轉向（Esc 暫停）');}
 function lockPointer(){
@@ -10230,7 +10251,7 @@ addEventListener('keydown',e=>{
   }
 });
 addEventListener('keyup',e=>{keys[norm(e.code)]=false;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;firing=false;adsMouse=false;touchFireModes.clear();});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;firing=false;adsMouse=false;touchFireModes.clear();touchAimFire=false;});
 /* 觸控：左半邊虛擬搖桿、右半邊轉向、按鈕開火／換彈／跳躍／蹲下／瞄準 */
 function resetJoy(){joyId=null;mv.x=mv.y=0;mv.run=false;$('joy').style.display='none';$('knob').style.transform='';}
 addEventListener('touchstart',e=>{
@@ -10260,7 +10281,7 @@ addEventListener('touchmove',e=>{
 },{passive:false});
 const endTouch=e=>{
   for(const t of e.changedTouches){
-    if(touchFireModes.has(t.identifier)){touchFireModes.delete(t.identifier);firing=touchFireModes.size>0;adsMouse=Array.from(touchFireModes.values()).some(Boolean);}
+    if(touchFireModes.has(t.identifier)){touchFireModes.delete(t.identifier);firing=Array.from(touchFireModes.values()).some(v=>!v);adsMouse=Array.from(touchFireModes.values()).some(Boolean);touchAimFire=adsMouse;}
     if(t.identifier===joyId)resetJoy();
     if(t.identifier===lookId)lookId=null;
   }
@@ -10272,7 +10293,7 @@ jb.addEventListener('touchend',()=>{jumpHeld=false;});
 jb.addEventListener('touchcancel',()=>{jumpHeld=false;});
 function beginTouchFire(e,aimFire){
   const t=e.changedTouches[0];touchFireModes.set(t.identifier,!!aimFire);
-  firing=true;adsMouse=Array.from(touchFireModes.values()).some(Boolean);
+  firing=Array.from(touchFireModes.values()).some(v=>!v);adsMouse=Array.from(touchFireModes.values()).some(Boolean);touchAimFire=adsMouse;
   if(lookId===null){lookId=t.identifier;lx=t.clientX;ly=t.clientY;}
   e.preventDefault();
 }
