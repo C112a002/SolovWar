@@ -261,6 +261,15 @@ body.playing #bodycamHud{display:flex}
 @media(max-width:520px){#bodycamHud{gap:6px;padding:5px 7px;font-size:8px;max-width:calc(100vw - 96px);box-sizing:border-box}#bcBrand{max-width:103px;overflow:hidden;text-overflow:ellipsis}#loaderTitle{font-size:18px}}
 @media(max-width:520px) and (orientation:portrait){#bodycamHud{left:max(12px,env(safe-area-inset-left));right:auto;top:max(128px,calc(env(safe-area-inset-top) + 120px));gap:5px;padding:4px 6px;font-size:7px;max-width:calc(100vw - 24px)}#bcBrand,#bcTimer,#bcDivider{display:none}}
 
+
+/* 執法記錄器訊號短暫失真層：平時完全隱藏，只在隨機短脈衝時呈現 */
+#bcNoise,#bcFlicker{position:fixed;inset:0;display:none;pointer-events:none}
+#bcFlicker{z-index:3;opacity:0;transition:opacity .025s linear;background:#fff}
+#bcNoise{z-index:4;width:100%;height:100%;opacity:0;mix-blend-mode:screen;image-rendering:pixelated}
+body.playing #bcNoise,body.playing #bcFlicker{display:block}
+body.bc-noise-burst #bcNoise{opacity:.15}
+body.bc-flicker #bcFlicker{opacity:.12}
+
 </style>
 </head>
 <body>
@@ -290,6 +299,23 @@ body.playing #bodycamHud{display:flex}
     if(timer){const n=Math.floor(recSeconds),h=Math.floor(n/3600),m=Math.floor(n%3600/60),sec=n%60;timer.textContent='REC '+[h,m,sec].map(v=>String(v).padStart(2,'0')).join(':');}}
   window.__beginGameBoot=()=>{phase=1;window.__setLoading(66,'建立遊戲場景與第一人稱裝備…');};
   setInterval(clock,250);clock();
+  /* 定時隨機短暫雜訊／畫面閃爍：低解析噪點只在脈衝期間更新，避免常駐耗能 */
+  document.addEventListener('DOMContentLoaded',()=>{
+  const noise=document.getElementById('bcNoise'),flicker=document.getElementById('bcFlicker'),ctx=noise&&noise.getContext('2d',{alpha:true});
+  let signalTimer=0,noiseTimer=0,burstTimer=0,flickerTimer=0;
+  function resizeNoise(){if(!noise)return;const w=Math.max(260,Math.round(innerWidth*.38));noise.width=w;noise.height=Math.max(150,Math.round(w*innerHeight/Math.max(1,innerWidth)));}
+  function drawNoise(){if(!ctx)return;const w=noise.width,h=noise.height,img=ctx.createImageData(w,h),d=img.data;
+    for(let i=0;i<d.length;i+=4){const v=(Math.random()*255)|0;d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=Math.random()<.38?Math.random()*150:0;}
+    ctx.putImageData(img,0,0);ctx.fillStyle='rgba(220,255,241,.28)';const rows=2+(Math.random()*4|0);
+    for(let j=0;j<rows;j++){const y=Math.random()*h;ctx.fillRect(0,y,w*(.35+Math.random()*.65),1+Math.random()*3);}
+    if(Math.random()<.35){ctx.fillStyle='rgba(255,255,255,.14)';ctx.fillRect(0,Math.random()*h,w,1);}}
+  function burst(){if(!noise||!document.body.classList.contains('playing'))return;
+    resizeNoise();document.body.classList.add('bc-noise-burst');drawNoise();noiseTimer=setInterval(drawNoise,55);
+    clearTimeout(burstTimer);burstTimer=setTimeout(()=>{clearInterval(noiseTimer);document.body.classList.remove('bc-noise-burst');ctx&&ctx.clearRect(0,0,noise.width,noise.height);},110+Math.random()*190);
+    if(Math.random()<.62&&flicker){flicker.style.background=Math.random()<.78?'#fff':'#030608';document.body.classList.add('bc-flicker');clearTimeout(flickerTimer);flickerTimer=setTimeout(()=>document.body.classList.remove('bc-flicker'),22+Math.random()*42);}}
+  function scheduleSignal(){clearTimeout(signalTimer);signalTimer=setTimeout(()=>{burst();scheduleSignal();},4200+Math.random()*10200);}
+  if(ctx){resizeNoise();addEventListener('resize',resizeNoise,{passive:true});scheduleSignal();}
+  });
 })();
 </script>
 
@@ -309,10 +335,11 @@ body.playing #bodycamHud{display:flex}
 <div id="overlay"><div class="card">
 <h1 id="ovh">🔫 SolovWar 槍戰</h1><p id="ovm"></p><p class="st" id="stats"></p>
 <p class="k" id="help">W A S D 移動　滑鼠轉向<br>空白鍵跳躍　Shift 衝刺<br>R 重新出生　Esc 暫停</p>
-<p class="t">左半邊拖曳：移動（拖到最外圈會衝刺）<br>右半邊滑動：轉向<br>左上按鈕：直接開火<br>右下開火鍵：按住先開鏡，完成後連射／換彈／跳躍／蹲下</p>
+<p class="t">左半邊拖曳：移動（拖到最外圈會衝刺）<br>右半邊滑動：轉向<br>左上按鈕：直接開火<br>右下開火鍵：按住先開鏡，完成後連射／換彈／跳躍／蹲下<br>滑鏟：衝刺移動中按下蹲下</p>
 <button id="start">開始戰鬥</button>
 </div></div>
 <div id="bodycamFx" aria-hidden="true"></div>
+<canvas id="bcNoise" aria-hidden="true"></canvas><div id="bcFlicker" aria-hidden="true"></div>
 <div id="bodycamHud" aria-label="HYTERA 執法記錄器畫面資訊">
   <span id="bcBrand">HYTERA · BODYCAM</span><span id="bcDivider"></span>
   <span id="bcRec"><i id="bcDot"></i>REC</span><span id="bcTimer">REC 00:00:00</span>
@@ -8891,12 +8918,12 @@ function rayBox(ox,oy,oz,dx,dy,dz,x0,y0,z0,x1,y1,z1){
 const R=.3,H=1.8,EYE=1.62,EYE_C=1.08,H_C=1.2;
 const pos={x:0,y:0,z:0},vel={x:0,y:0,z:0};
 let yaw=Math.PI,pitch=0,onGround=false,active=false,last=performance.now(),frames=0;
-let crouchT=0,crouchBtn=false,adsT=0,adsBtn=false,adsKey=false,adsMouse=false,landKick=0,sprinting=false,bobP=0,shakeA=0,deathT=0,fovNow=75,noInfo=0;
+let crouchT=0,crouchBtn=false,slideT=0,slideVX=0,slideVZ=0,crouchWas=false,adsT=0,adsBtn=false,adsKey=false,adsMouse=false,landKick=0,sprinting=false,bobP=0,shakeA=0,deathT=0,fovNow=75,noInfo=0;
 let pNoise=0,strafeV=0,stepAcc=0,recP=0,recY=0;
 const keys={},mv={x:0,y:0,run:false};let jumpHeld=false;
 const PH=[];                                   /* 玩家位置歷史：敵人瞄準有「看到的是過去的你」的延遲 */
 const eyeH=()=>lerp(EYE,EYE_C,crouchT),bodyH=()=>lerp(H,H_C,crouchT);
-function respawn(){[pos.x,pos.y,pos.z]=SPAWN;vel.x=vel.y=vel.z=0;yaw=Math.PI;pitch=0;crouchT=0;recP=recY=0;PH.length=0;}
+function respawn(){[pos.x,pos.y,pos.z]=SPAWN;vel.x=vel.y=vel.z=0;yaw=Math.PI;pitch=0;crouchT=0;slideT=slideVX=slideVZ=0;crouchWas=false;recP=recY=0;PH.length=0;}
 respawn();
 const hit=(x,y,z,h)=>{
   h=h||H;
@@ -8913,7 +8940,7 @@ const hit=(x,y,z,h)=>{
   return false;
 };
 const DEF_BIND={fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',jump:'Space',run:'ShiftLeft',crouch:'KeyC',aim:'KeyV',respawn:'KeyT',reload:'KeyR'};
-const ACTIONS=[['fwd','前進'],['back','後退'],['left','向左'],['right','向右'],['jump','跳躍'],['run','衝刺'],['crouch','蹲下（按住）'],['aim','瞄準（按住）'],['reload','換彈'],['respawn','重新出生']];
+const ACTIONS=[['fwd','前進'],['back','後退'],['left','向左'],['right','向右'],['jump','跳躍'],['run','衝刺'],['crouch','蹲下／滑鏟（按住）'],['aim','瞄準（按住）'],['reload','換彈'],['respawn','重新出生']];
 const ARROW={fwd:'ArrowUp',back:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
 const cfg={sens:1,fov:75,vol:.7,diff:1,showPos:false,kf:true,chat:true,blood:true,best:0,bind:{...DEF_BIND}};
 try{const o=JSON.parse(localStorage.getItem('solovwar-settings')||'null');
@@ -8930,8 +8957,18 @@ function update(dt){
   let f=dn('fwd')-dn('back')+mv.y;
   let s=dn('right')-dn('left')+mv.x;
   const len=Math.hypot(f,s);if(len>1){f/=len;s/=len;}
-  /* 蹲下：頭上沒空間時維持蹲姿 */
-  let wc=dn('crouch')||crouchBtn;
+  /* 衝刺移動時按下蹲下可進入滑鏟；觸控使用同一顆蹲下按鈕 */
+  const crouchInput=dn('crouch')||crouchBtn,runInput=(dn('run')||mv.run)&&f>.1&&adsT<.3;
+  const hsBefore=Math.hypot(vel.x,vel.z);
+  if(crouchInput&&!crouchWas&&runInput&&onGround&&hsBefore>1.2&&slideT<=0){
+    let dx=-Math.sin(yaw)*f+Math.cos(yaw)*s,dz=-Math.cos(yaw)*f-Math.sin(yaw)*s,dl=Math.hypot(dx,dz);
+    if(hsBefore>dl*3){dx=vel.x;dz=vel.z;dl=Math.hypot(dx,dz);}
+    if(dl>.01){const v=clamp(Math.max(hsBefore,4.8)*1.12,4.8,7.4);slideVX=dx/dl*v;slideVZ=dz/dl*v;slideT=.9;
+      if(crouchBtn){crouchBtn=false;$('crh').classList.remove('on');}}
+  }
+  crouchWas=crouchInput;
+  if(slideT>0)slideT=Math.max(0,slideT-dt);
+  let wc=slideT>0||crouchInput;
   if(!wc&&crouchT>0&&hit(pos.x,pos.y,pos.z,H))wc=true;
   crouchT=clamp(crouchT+(wc?1:-1)*dt*7,0,1);
   const ph=lerp(H,H_C,crouchT);
@@ -8940,16 +8977,21 @@ function update(dt){
   sprinting=wantRun&&onGround;
   const sp=(wantRun?6.2:4.3)*lerp(1,.5,crouchT)*lerp(1,.68,adsT),sy=Math.sin(yaw),cy=Math.cos(yaw);
   const a=Math.min(1,dt*(onGround?14:4));
-  vel.x+=((-sy*f+cy*s)*sp-vel.x)*a;vel.z+=((-cy*f-sy*s)*sp-vel.z)*a;
+  if(slideT>0){
+    const steer=Math.hypot(f,s)>.08,sdx=-sy*f+cy*s,sdz=-cy*f-sy*s,sl=Math.hypot(sdx,sdz)||1;
+    const decay=Math.exp(-2.0*dt);slideVX*=decay;slideVZ*=decay;
+    if(steer){slideVX+=sdx/sl*dt*1.7;slideVZ+=sdz/sl*dt*1.7;}
+    vel.x=slideVX;vel.z=slideVZ;
+  }else{vel.x+=((-sy*f+cy*s)*sp-vel.x)*a;vel.z+=((-cy*f-sy*s)*sp-vel.z)*a;}
   strafeV+=(s-strafeV)*Math.min(1,dt*8);
   if((dn('jump')||jumpHeld)&&onGround&&crouchT<.5){vel.y=8.6;onGround=false;}
   const vy0=vel.y;
   vel.y=Math.max(vel.y-26*dt,-40);
   let n=pos.x+vel.x*dt;
-  if(hit(n,pos.y,pos.z,ph)){n=vel.x>0?Math.floor(n+R)-R-.001:Math.floor(n-R)+1+R+.001;if(hit(n,pos.y,pos.z,ph))n=pos.x;vel.x=0;}
+  if(hit(n,pos.y,pos.z,ph)){n=vel.x>0?Math.floor(n+R)-R-.001:Math.floor(n-R)+1+R+.001;if(hit(n,pos.y,pos.z,ph))n=pos.x;vel.x=0;slideVX=0;}
   pos.x=n;
   n=pos.z+vel.z*dt;
-  if(hit(pos.x,pos.y,n,ph)){n=vel.z>0?Math.floor(n+R)-R-.001:Math.floor(n-R)+1+R+.001;if(hit(pos.x,pos.y,n,ph))n=pos.z;vel.z=0;}
+  if(hit(pos.x,pos.y,n,ph)){n=vel.z>0?Math.floor(n+R)-R-.001:Math.floor(n-R)+1+R+.001;if(hit(pos.x,pos.y,n,ph))n=pos.z;vel.z=0;slideVZ=0;}
   pos.z=n;
   n=pos.y+vel.y*dt;
   if(hit(pos.x,n,pos.z,ph)){n=vel.y<0?Math.floor(n)+1.001:Math.floor(n+ph)-ph-.001;if(hit(pos.x,n,pos.z,ph))n=pos.y;
@@ -10405,7 +10447,7 @@ const sens=$('sens'),sensV=$('sensV'),fovS=$('fov'),fovV=$('fovV'),volS=$('vol')
 const showPos=$('showPos'),optKf=$('optKf'),optChat=$('optChat'),optBlood=$('optBlood');
 function renderHelp(){
   const n=a=>kname(cfg.bind[a]);
-  $('help').innerHTML=[n('fwd'),n('left'),n('back'),n('right')].join(' ')+' 移動　滑鼠轉向<br>左鍵 開火　右鍵／'+n('aim')+' 瞄準<br>'+n('jump')+' 跳躍　'+n('run')+' 衝刺　'+n('crouch')+' 蹲下<br>'+n('reload')+' 換彈　'+n('respawn')+' 重新出生　Esc 暫停';
+  $('help').innerHTML=[n('fwd'),n('left'),n('back'),n('right')].join(' ')+' 移動　滑鼠轉向<br>左鍵 開火　右鍵／'+n('aim')+' 瞄準<br>'+n('jump')+' 跳躍　'+n('run')+' 衝刺　'+n('crouch')+' 蹲下／滑鏟（衝刺時按）<br>'+n('reload')+' 換彈　'+n('respawn')+' 重新出生　Esc 暫停';
 }
 function renderBinds(){
   const box=$('binds');box.innerHTML='';
@@ -10519,7 +10561,7 @@ function tick(dt){
   const sp=spreadNow(),px=3+sp/Math.tan(fovNow*Math.PI/360)*innerHeight*.5;
   $('xh').style.setProperty('--sp',px.toFixed(1)+'px');
   document.body.classList.toggle('aim',adsT>.5);
-  const st=(crouchT>.5?'蹲下':sprinting?'衝刺':'')+(adsT>.5?(crouchT>.5||sprinting?' ':'')+'瞄準':'');
+  const st=slideT>0?'滑鏟':(crouchT>.5?'蹲下':sprinting?'衝刺':'')+(adsT>.5?(crouchT>.5||sprinting?' ':'')+'瞄準':'');
   if(st!==HC2.st){HC2.st=st;$('stance').textContent=st;}
 }
 function placeCamera(dt){
