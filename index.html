@@ -8631,7 +8631,7 @@ const D6=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],D4=[[1,0],[-1,0],[
 const BARRELS=PROPS.filter(p=>p.k>=4);
 /* ---- 燈具與烘焙光照：牆邊掛燈、洪水填充顏色光、頂點平滑光＋環境光遮蔽 ---- */
 const LAMPS=[];                    /* {x,y,z,c:[r,g,b],dx,dz,ph} */
-const AMB=[.25,.27,.33];
+const AMB=[.29,.30,.37];
 (function placeLamps(){
   const cand=[];
   for(let y=2;y<NY-1;y++)for(let z=1;z<NZ-1;z++)for(let x=1;x<NX-1;x++){
@@ -8659,13 +8659,13 @@ const LC=new Float32Array(NN*3);   /* 曲線化後的方塊光：0..1 */
   const lv=[new Uint8Array(NN),new Uint8Array(NN),new Uint8Array(NN)];
   for(let ch=0;ch<3;ch++){
     const L=lv[ch],q=[];
-    for(const l of LAMPS){const v=Math.round(15*l.c[ch]),i=ix(l.x,l.y,l.z);if(v>L[i]){L[i]=v;q.push(i);}}
+    for(const l of LAMPS){const v=Math.round(17*l.c[ch]),i=ix(l.x,l.y,l.z);if(v>L[i]){L[i]=v;q.push(i);}}
     for(let h=0;h<q.length;h++){
       const i=q[h],v=L[i]-1;if(v<=0)continue;
       const x=i%NX,z=((i/NX)|0)%NZ,y=(i/(NX*NZ))|0;
       for(const[a,b,c]of D6){const X=x+a,Y=y+b,Z=z+c;if(!inb(X,Y,Z))continue;const j=ix(X,Y,Z);if(grid[j]===1||grid[j]===3)continue;if(L[j]<v){L[j]=v;q.push(j);}}
     }
-    for(let i=0;i<NN;i++)LC[i*3+ch]=L[i]>0?Math.pow(.82,15-L[i]):0;
+    for(let i=0;i<NN;i++)LC[i*3+ch]=L[i]>0?Math.pow(.855,17-L[i]):0;
   }
 })();
 const LT=[0,0,0];
@@ -8742,7 +8742,7 @@ function paintGlow(){
   g.fillStyle=r;g.fillRect(0,0,64,64);return c;
 }
 /* ---- 烘焙方塊面：頂點平滑光照＋環境光遮蔽（AO），依面向分組貼圖 ---- */
-const FSH=[[.86,.86],[1,.64],[.74,.74]],AOK=[.48,.67,.84,1],EXPO=1.55;
+const FSH=[[.86,.86],[1,.64],[.74,.74]],AOK=[.44,.63,.81,1],EXPO=1.64;
 const faceOpaque=(x,y,z)=>{if(!inb(x,y,z))return true;const i=ix(x,y,z),g=grid[i];return g===1||(g===3&&PK[i]<4);};
 function addFace(b,x,y,z,ax,sg){
   const u=(ax+1)%3,w=(ax+2)%3,ord=sg>0?[[0,0],[1,0],[1,1],[0,1]]:[[0,0],[0,1],[1,1],[1,0]],vs=[];
@@ -8859,7 +8859,7 @@ const LAMPOBJ=[];
   }
 })();
 function animateLamps(t){
-  for(const o of LAMPOBJ){const f=1.6+Math.sin(t*7.3+o.ph)*.07+Math.sin(t*12.1+o.ph*2.3)*.05;o.sp.scale.set(f,f,1);o.sp.material.opacity=.72+Math.sin(t*9+o.ph)*.08;}
+  for(const o of LAMPOBJ){const f=1.75+Math.sin(t*7.3+o.ph)*.09+Math.sin(t*12.1+o.ph*2.3)*.06;o.sp.scale.set(f,f,1);o.sp.material.opacity=.79+Math.sin(t*9+o.ph)*.09;}
 }
 /* ---- 射線：體素牆（DDA）與方塊 ---- */
 const wn=[0,0,0],HC={x:0,y:0,z:0,g:0};
@@ -9281,7 +9281,7 @@ const laserHalo=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshBa
 for(const m of[laserImpact,laserHalo]){m.layers.set(0);m.visible=false;m.frustumCulled=false;scene.add(m);}
 const laserDir=new THREE.Vector3(),laserFrom=new THREE.Vector3();
 let laserScan=0,laserRange=35;
-{const am=new THREE.AmbientLight(0xffffff,.7),d1=new THREE.DirectionalLight(0xfff2e0,1),d2=new THREE.DirectionalLight(0x8aa4ff,.35);
+{const am=new THREE.AmbientLight(0xffffff,.74),d1=new THREE.DirectionalLight(0xfff0d9,1.1),d2=new THREE.DirectionalLight(0x91aaff,.42);
  d1.position.set(-.7,1,.6);d2.position.set(.8,-.2,.4);
  for(const l of[am,d1,d2]){l.layers.set(1);camera.add(l);}
  for(const l of[d1,d2]){l.target.position.set(0,-.1,-1);camera.add(l.target);}}
