@@ -16,9 +16,9 @@
         <a class="menu-item start-item" href="./game/" aria-label="開始遊戲">
           <img src="./menu-assets/start.png" alt="" draggable="false">
         </a>
-        <a class="menu-item settings-item" href="./game/?openSettings=1" aria-label="設定">
+        <button class="menu-item settings-item" type="button" aria-label="設定" aria-haspopup="dialog" aria-controls="settings-dialog">
           <img src="./menu-assets/settings.png" alt="" draggable="false">
-        </a>
+        </button>
         <button class="menu-item about-item" type="button" aria-label="關於遊戲" aria-haspopup="dialog" aria-controls="about-dialog">
           <img src="./menu-assets/about.png" alt="" draggable="false">
         </button>
@@ -28,11 +28,49 @@
       </nav>
     </div>
 
+    <div class="dialog-backdrop" id="settings-dialog" hidden>
+      <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <button class="settings-close" type="button" aria-label="關閉設定">
+          <img class="close-frame" src="./menu-assets/settings-close-frame.png" alt="">
+          <img class="close-line-a" src="./menu-assets/settings-close-a.png" alt="">
+          <img class="close-line-b" src="./menu-assets/settings-close-b.png" alt="">
+        </button>
+        <div class="settings-scroll">
+          <header class="settings-heading"><h1 id="settings-title">設定</h1><p>變更會自動儲存；電腦版按 O 可快速開關。</p></header>
+          <div class="settings-grid">
+            <fieldset class="settings-group">
+              <legend>畫面與操作</legend>
+              <label class="setting-control"><span>視角靈敏度 <output data-value="sens">100%</output></span><input type="range" data-setting="sens" min="20" max="300" step="5"></label>
+              <label class="setting-control"><span>視野角度 <output data-value="fov">75°</output></span><input type="range" data-setting="fov" min="60" max="100" step="1"></label>
+              <label class="setting-control"><span>遊戲解析度 <output data-value="resolution">100%</output></span><input type="range" data-setting="resolution" min="50" max="125" step="25"></label>
+              <label class="setting-control"><span>畫質</span><select data-setting="quality"><option value="low">省電</option><option value="medium">平衡</option><option value="high">細緻</option></select></label>
+              <label class="setting-control"><span>混凝土粗糙度 <output data-value="concreteRoughness">95%</output></span><input type="range" data-setting="concreteRoughness" min="55" max="100" step="5"></label>
+            </fieldset>
+            <fieldset class="settings-group">
+              <legend>遊戲偏好</legend>
+              <label class="setting-control"><span>音量 <output data-value="vol">70%</output></span><input type="range" data-setting="vol" min="0" max="100" step="5"></label>
+              <label class="setting-control"><span>敵人強度</span><select data-setting="diff"><option value="0">輕鬆</option><option value="1">標準</option><option value="2">老手</option><option value="3">惡夢</option></select></label>
+              <label class="setting-check"><span>顯示座標</span><input type="checkbox" data-setting="showPos"></label>
+              <label class="setting-check"><span>擊殺訊息</span><input type="checkbox" data-setting="kf"></label>
+              <label class="setting-check"><span>隊伍聊天</span><input type="checkbox" data-setting="chat"></label>
+              <label class="setting-check"><span>受傷血霧</span><input type="checkbox" data-setting="blood"></label>
+            </fieldset>
+          </div>
+          <fieldset class="settings-group keybind-group">
+            <legend>按鍵設定</legend>
+            <p class="settings-hint">點選按鈕後按下新按鍵。O 保留為設定開關。</p>
+            <div class="keybind-grid" id="keybind-list"></div>
+          </fieldset>
+          <footer class="settings-footer"><span id="settings-status" role="status" aria-live="polite">設定會自動儲存至此瀏覽器</span><button class="reset-settings" type="button">還原預設值</button></footer>
+        </div>
+      </section>
+    </div>
+
     <div class="dialog-backdrop" id="about-dialog" hidden>
       <section class="about-panel" role="dialog" aria-modal="true" aria-labelledby="about-title">
         <h1 id="about-title">關於遊戲</h1>
         <p>SolovWar 戰術射擊體驗</p>
-        <p>進入戰場後，可在遊戲內設定調整視角、畫質、音量與操作偏好。</p>
+        <p>可先在主選單調整視角、畫質、音量與操作偏好，再進入戰場。</p>
         <button class="dialog-close" type="button">返回主選單</button>
       </section>
     </div>

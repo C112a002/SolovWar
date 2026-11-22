@@ -30,3 +30,50 @@ button,a{-webkit-tap-highlight-color:transparent}
   .about-panel{width:min(92vw,580px);min-height:min(76vh,520px);aspect-ratio:auto;padding:74px 24px 30px;background-size:100% auto;background-position:top center;background-color:rgba(12,22,37,.95)}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+
+/* 主選單設定：控制項直接寫入遊戲共用的 solovwar-settings 偏好。 */
+.settings-item{font:inherit}
+.settings-panel{position:relative;width:min(980px,94vw);height:min(880px,92vh);padding:0;border:0;color:#e6f1ff;background:#0d1929 url("./menu-assets/settings-panel.png") center/100% 100% no-repeat;box-shadow:0 24px 80px rgba(0,0,0,.62);overflow:hidden}
+.settings-scroll{height:100%;overflow:auto;padding:62px clamp(24px,5vw,72px) 26px;scrollbar-color:#3c5a7a rgba(7,14,24,.45)}
+.settings-heading{display:flex;align-items:baseline;gap:18px;margin:0 76px 20px 0;border-bottom:1px solid rgba(60,90,122,.72);padding-bottom:12px}
+.settings-heading h1{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:.12em}
+.settings-heading p,.settings-hint{margin:0;color:#9eb2c9;font-size:13px;line-height:1.55}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.settings-group{min-width:0;margin:0;padding:14px 16px 12px;border:1px solid rgba(60,90,122,.62);background:rgba(7,16,28,.48)}
+.settings-group legend{padding:0 8px;color:#38f2c8;font-size:15px;font-weight:700;letter-spacing:.08em}
+.setting-control{display:grid;gap:8px;margin:0 0 14px;color:#dce8f5;font-size:14px}
+.setting-control:last-child{margin-bottom:2px}
+.setting-control>span{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.setting-control output{color:#38f2c8;font-variant-numeric:tabular-nums}
+.setting-control input[type=range]{width:100%;margin:0;accent-color:#38f2c8}
+.setting-control select{width:100%;padding:8px 10px;border:1px solid #294c65;border-radius:3px;background:#111d2d;color:#e6f1ff;font:inherit}
+.setting-control option{background:#111d2d;color:#e6f1ff}
+.setting-check{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;color:#dce8f5;font-size:14px}
+.setting-check:last-child{margin-bottom:2px}
+.setting-check input{width:19px;height:19px;margin:0;accent-color:#38f2c8}
+.keybind-group{margin-top:16px}
+.keybind-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px;margin-top:12px}
+.keybind-row{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#dce8f5;font-size:13px}
+.keybind-button,.reset-settings{padding:7px 12px;border:1px solid #294c65;border-radius:3px;background:rgba(21,42,60,.94);color:#e6f1ff;font:inherit;cursor:pointer}
+.keybind-button:hover,.keybind-button:focus-visible,.reset-settings:hover,.reset-settings:focus-visible{border-color:#38f2c8;background:#18374a;outline:none}
+.keybind-button.waiting{border-color:#38f2c8;color:#38f2c8;box-shadow:0 0 12px rgba(56,242,200,.2)}
+.settings-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:14px;color:#9eb2c9;font-size:12px}
+.reset-settings{flex:0 0 auto}
+.settings-close{position:absolute;z-index:3;top:14px;right:20px;width:82px;height:52px;padding:0;border:0;background:transparent;cursor:pointer}
+.settings-close img{position:absolute;display:block;pointer-events:none;object-fit:fill}
+.settings-close .close-frame{inset:0;width:100%;height:100%}
+.settings-close .close-line-a{left:8%;top:9%;width:84%;height:82%}
+.settings-close .close-line-b{left:8%;top:0;width:84%;height:100%}
+.settings-close:hover{filter:brightness(1.65) drop-shadow(0 0 8px rgba(56,242,200,.36))}
+.settings-close:focus-visible{outline:2px solid #38f2c8;outline-offset:3px}
+@media(max-width:700px){
+  .settings-panel{width:96vw;height:94dvh;background-size:100% 100%}
+  .settings-scroll{padding:68px 18px 22px}
+  .settings-heading{display:block;margin:0 66px 16px 0}
+  .settings-heading p{margin-top:5px}
+  .settings-grid{grid-template-columns:1fr;gap:12px}
+  .settings-group{padding:12px}
+  .keybind-grid{grid-template-columns:1fr;gap:8px}
+  .settings-close{top:10px;right:12px;width:72px;height:46px}
+  .settings-footer{align-items:flex-start;flex-direction:column}
+}
