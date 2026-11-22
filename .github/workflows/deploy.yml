@@ -27,11 +27,13 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Extract game ZIP into site root
+      - name: Build home menu and game site
         run: |
-          mkdir -p _site extracted
+          mkdir -p _site/game extracted
           unzip -q SolovWar-textures-updated.zip -d extracted
-          cp -a extracted/SolovWar/. _site/
+          cp -a extracted/SolovWar/. _site/game/
+          cp index.html menu.css menu.js _site/
+          cp -a menu-assets _site/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
