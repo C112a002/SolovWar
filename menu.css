@@ -6,8 +6,8 @@ button,a{-webkit-tap-highlight-color:transparent}
 .home-screen::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,10,18,.62),rgba(5,10,18,.12) 58%,rgba(5,10,18,.32)),linear-gradient(0deg,rgba(4,8,14,.48),transparent 48%,rgba(4,8,14,.12));pointer-events:none}
 .menu-stage{position:absolute;left:50%;top:50%;width:min(100vw,177.7778vh);height:min(100vh,56.25vw);transform:translate(-50%,-50%)}
 .menu-items{position:absolute;inset:0}
-.menu-item{position:absolute;display:block;width:16.12%;height:7.28%;margin:0;padding:0;border:0;background:transparent;cursor:pointer;transition:filter .18s ease,transform .18s ease;outline:none}
-.menu-item img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
+.menu-item{position:absolute;display:block;width:16.12%;height:7.28%;margin:0;padding:0;border:0;background:transparent;overflow:visible;cursor:pointer;transition:filter .18s ease,transform .18s ease;outline:none}
+.menu-item img{position:absolute;left:0;top:50%;display:block;width:100%;height:auto;transform:translateY(-50%);object-fit:contain;pointer-events:none;user-select:none}
 .menu-item:hover{filter:brightness(1.22) drop-shadow(0 0 12px rgba(56,242,200,.45));transform:translateX(8px)}
 .menu-item:focus-visible{filter:brightness(1.28) drop-shadow(0 0 14px rgba(56,242,200,.8));outline:2px solid rgba(56,242,200,.92);outline-offset:2px}
 .start-item{left:18.64%;top:34.99%}
