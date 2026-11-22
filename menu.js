@@ -22,7 +22,7 @@
     ["aim", "瞄準"], ["reload", "換彈"], ["respawn", "重新出生"]
   ];
   const DEFAULTS = {
-    sens: 1, fov: 75, resolution: 1, quality: "medium", concreteRoughness: .95,
+    sens: 1, gyroSens: 1, fov: 75, resolution: 1, quality: "medium", concreteRoughness: .95,
     vol: .7, diff: 1, showPos: false, gyro: false, kf: true, chat: true,
     blood: true, showTouchControls: touchDevice, best: 0, bind: { ...DEFAULT_BIND }
   };
@@ -32,7 +32,9 @@
   function readSettings() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      return { ...DEFAULTS, ...(saved && typeof saved === "object" ? saved : {}), bind: { ...DEFAULT_BIND, ...(saved?.bind || {}) } };
+      const prefs = { ...DEFAULTS, ...(saved && typeof saved === "object" ? saved : {}), bind: { ...DEFAULT_BIND, ...(saved?.bind || {}) } };
+      prefs.gyroSens = typeof saved?.gyroSens === "number" && Number.isFinite(saved.gyroSens) ? Math.min(3, Math.max(.25, saved.gyroSens)) : DEFAULTS.gyroSens;
+      return prefs;
     } catch {
       return { ...DEFAULTS, bind: { ...DEFAULT_BIND } };
     }
@@ -67,7 +69,7 @@
       const key = control.dataset.setting;
       if (control.type === "checkbox") control.checked = Boolean(prefs[key]);
       else if (control.type === "range") {
-        const percentKeys = { sens: prefs.sens * 100, resolution: prefs.resolution * 100, concreteRoughness: prefs.concreteRoughness * 100, vol: prefs.vol * 100 };
+        const percentKeys = { sens: prefs.sens * 100, gyroSens: prefs.gyroSens * 100, resolution: prefs.resolution * 100, concreteRoughness: prefs.concreteRoughness * 100, vol: prefs.vol * 100 };
         control.value = percentKeys[key] ?? prefs[key];
         const output = document.querySelector(`[data-value="${key}"]`);
         if (output) output.value = key === "fov" ? `${control.value}°` : `${control.value}%`;
@@ -121,7 +123,7 @@
     if (control.type === "checkbox") value = control.checked;
     else if (control.type === "range") {
       const number = Number(control.value);
-      value = ({ sens: number / 100, resolution: number / 100, concreteRoughness: number / 100, vol: number / 100 })[key] ?? number;
+      value = ({ sens: number / 100, gyroSens: number / 100, resolution: number / 100, concreteRoughness: number / 100, vol: number / 100 })[key] ?? number;
       const output = document.querySelector(`[data-value="${key}"]`);
       if (output) output.value = key === "fov" ? `${number}°` : `${number}%`;
     } else value = key === "diff" ? Number(control.value) : control.value;

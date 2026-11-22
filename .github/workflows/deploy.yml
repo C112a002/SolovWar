@@ -33,6 +33,8 @@ jobs:
           unzip -q SolovWar-textures-updated.zip -d extracted
           cp -a extracted/SolovWar/. _site/game/
           cp index.html menu.css menu.js _site/
+          cp manifest.json _site/
+          cp -a icons _site/
           cp -a menu-assets _site/
 
       - name: Upload Pages artifact
