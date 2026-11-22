@@ -10,6 +10,7 @@
   const status = document.querySelector("#settings-status");
   const keybindList = document.querySelector("#keybind-list");
   const desktopKeys = window.matchMedia("(pointer: fine)");
+  const touchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
   const STORAGE_KEY = "solovwar-settings";
   const DEFAULT_BIND = {
     fwd: "KeyW", back: "KeyS", left: "KeyA", right: "KeyD", jump: "Space",
@@ -23,7 +24,7 @@
   const DEFAULTS = {
     sens: 1, fov: 75, resolution: 1, quality: "medium", concreteRoughness: .95,
     vol: .7, diff: 1, showPos: false, gyro: false, kf: true, chat: true,
-    blood: true, best: 0, bind: { ...DEFAULT_BIND }
+    blood: true, showTouchControls: touchDevice, best: 0, bind: { ...DEFAULT_BIND }
   };
   let noticeTimer;
   let capturing = null;
