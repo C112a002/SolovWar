@@ -33,6 +33,13 @@
           <img src="./menu-assets/exit.png" alt="" draggable="false">
         </button>
       </nav>
+      <section class="discord-auth" data-discord-auth aria-label="Discord 登入">
+        <img data-discord-avatar alt="" hidden>
+        <span data-discord-name>尚未登入 Discord</span>
+        <button type="button" data-discord-login>使用 Discord 登入</button>
+        <button type="button" data-discord-logout hidden>登出</button>
+        <small data-discord-message role="status" aria-live="polite"></small>
+      </section>
     </div>
 
     <div class="dialog-backdrop" id="settings-dialog" hidden>
@@ -86,6 +93,8 @@
 
     <p class="notice" id="notice" role="status" aria-live="polite" hidden></p>
   </main>
+  <script src="./auth-config.js"></script>
+  <script src="./discord-auth.js" defer></script>
   <script src="./menu.js" defer></script>
 </body>
 </html>

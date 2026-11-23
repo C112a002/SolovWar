@@ -1,0 +1,12 @@
+name = "solovwar-discord-auth"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+GAME_ORIGIN = "https://c112a002.github.io"
+GAME_PATH_PREFIX = "/SolovWar"
+
+# Set secrets with:
+# wrangler secret put DISCORD_CLIENT_ID
+# wrangler secret put DISCORD_CLIENT_SECRET
+# wrangler secret put SESSION_SECRET
