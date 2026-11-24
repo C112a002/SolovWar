@@ -46,6 +46,8 @@
       <small data-discord-message role="status" aria-live="polite"></small>
     </section>
 
+    <button class="announcement-button" id="announcement-open" type="button" aria-haspopup="dialog" aria-controls="announcement-dialog">公告</button>
+
     <div class="dialog-backdrop" id="settings-dialog" hidden>
       <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <button class="settings-close" type="button" aria-label="關閉設定">
@@ -116,6 +118,14 @@
         </section>
         <p class="about-note">桌機按鍵可在主選單「設定」的「按鍵設定」中自訂；進入遊戲後，手機可使用虛擬搖桿與觸控按鈕。</p>
         <button class="dialog-close" type="button">返回主選單</button>
+      </section>
+    </div>
+
+    <div class="dialog-backdrop" id="announcement-dialog" hidden>
+      <section class="announcement-panel" role="dialog" aria-modal="true" aria-labelledby="announcement-title">
+        <header class="announcement-header"><div><p class="announcement-eyebrow">GAME UPDATES</p><h1 id="announcement-title">最新公告</h1></div><button class="announcement-close" type="button" aria-label="關閉公告">×</button></header>
+        <p class="announcement-loading" id="announcement-loading" role="status" aria-live="polite">正在載入公告…</p>
+        <ul class="announcement-list" id="announcement-list" aria-live="polite"></ul>
       </section>
     </div>
 

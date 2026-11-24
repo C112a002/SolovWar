@@ -3,7 +3,7 @@
   const storageKey = "solovwar-discord-session";
   const workerUrl = String(config.workerUrl || "").replace(/\/$/, "");
   const currentUrl = () => `${location.origin}${location.pathname}${location.search}`;
-  const state = { user: null, canAccessAdmin: false, isAdminOwner: false };
+  const state = { user: null, canAccessAdmin: false, isAdminOwner: false, playerAccess: null };
 
   function getToken() {
     try { return localStorage.getItem(storageKey) || ""; } catch { return ""; }
@@ -34,12 +34,18 @@
         if (src) avatar.src = src;
       }
       panel.dataset.loggedIn = loggedIn ? "true" : "false";
+      panel.dataset.playerStatus = state.playerAccess?.status || "unknown";
     });
+    if (state.user && state.playerAccess?.status === "banned") {
+      showMessage(`此 Discord 帳戶已被封鎖，無法進入遊戲。${state.playerAccess.reason ? `原因：${state.playerAccess.reason}` : ""}`);
+    } else if (state.user && state.playerAccess?.status === "unavailable") {
+      showMessage("目前無法驗證帳戶狀態，為保護遊戲服務，暫時無法以此帳戶進入遊戲。");
+    }
     document.querySelectorAll("[data-admin-button]").forEach(button => {
       button.hidden = !state.user || !state.canAccessAdmin;
     });
     window.dispatchEvent(new CustomEvent("solovwar:auth-updated", {
-      detail: { loggedIn: Boolean(state.user), canAccessAdmin: state.canAccessAdmin, isAdminOwner: state.isAdminOwner }
+      detail: { loggedIn: Boolean(state.user), canAccessAdmin: state.canAccessAdmin, isAdminOwner: state.isAdminOwner, playerAccess: state.playerAccess }
     }));
   }
   async function loadAdminAccess(token) {
@@ -60,12 +66,30 @@
     }
     if (getToken() === token) render();
   }
+  async function loadPlayerAccess(token) {
+    state.playerAccess = { status: "checking", reason: "" };
+    render();
+    try {
+      const response = await fetch(`${workerUrl}/api/player/status`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new Error("player_status_unavailable");
+      const result = await response.json();
+      if (getToken() !== token) return;
+      state.playerAccess = result.banned
+        ? { status: "banned", reason: String(result.reason || "") }
+        : { status: "allowed", reason: "" };
+    } catch {
+      if (getToken() !== token) return;
+      state.playerAccess = { status: "unavailable", reason: "" };
+    }
+    if (getToken() === token) render();
+  }
   async function loadProfile() {
     const token = getToken();
     if (!token) {
       state.user = null;
       state.canAccessAdmin = false;
       state.isAdminOwner = false;
+      state.playerAccess = null;
       render();
       return;
     }
@@ -74,6 +98,7 @@
       state.user = null;
       state.canAccessAdmin = false;
       state.isAdminOwner = false;
+      state.playerAccess = null;
       render();
       return;
     }
@@ -83,14 +108,16 @@
       const profile = await response.json();
       if (getToken() !== token) return;
       state.user = profile.user;
+      state.playerAccess = { status: "checking", reason: "" };
       render();
-      await loadAdminAccess(token);
+      await Promise.all([loadAdminAccess(token), loadPlayerAccess(token)]);
     } catch {
       if (getToken() !== token) return;
       setToken("");
       state.user = null;
       state.canAccessAdmin = false;
       state.isAdminOwner = false;
+      state.playerAccess = null;
       render();
     }
   }
@@ -107,6 +134,7 @@
     state.user = null;
     state.canAccessAdmin = false;
     state.isAdminOwner = false;
+    state.playerAccess = null;
     render();
     showMessage("已登出 Discord。");
   }
@@ -129,11 +157,13 @@
     getUser: () => state.user,
     getToken,
     getWorkerUrl: () => workerUrl,
-    getAdminStatus: () => ({ authorized: state.canAccessAdmin, isOwner: state.isAdminOwner })
+    getAdminStatus: () => ({ authorized: state.canAccessAdmin, isOwner: state.isAdminOwner }),
+    getPlayerAccess: () => state.playerAccess ? { ...state.playerAccess } : null
   });
   document.addEventListener("click", event => {
-    const loginButton = event.target.closest("[data-discord-login]");
-    const logoutButton = event.target.closest("[data-discord-logout]");
+    const target = event.target instanceof Element ? event.target : null;
+    const loginButton = target?.closest("[data-discord-login]");
+    const logoutButton = target?.closest("[data-discord-logout]");
     if (loginButton) login();
     if (logoutButton) logout();
   });

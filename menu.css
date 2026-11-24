@@ -107,3 +107,25 @@ button,a{-webkit-tap-highlight-color:transparent}
 .home-screen .discord-auth .admin-button{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(56,242,200,.65);border-radius:7px;padding:7px 12px;background:rgba(12,45,51,.92);color:#38f2c8;text-decoration:none;font:inherit;font-weight:700;transition:background .18s,border-color .18s,transform .18s}
 .home-screen .discord-auth .admin-button:hover,.home-screen .discord-auth .admin-button:focus-visible{transform:translateY(-1px);border-color:#38f2c8;background:#183f48;outline:none}
 .home-screen .discord-auth .admin-button[hidden]{display:none}
+
+
+/* 主選單公告與玩家狀態 */
+.announcement-button{position:absolute;z-index:4;left:max(16px,env(safe-area-inset-left));bottom:max(16px,env(safe-area-inset-bottom));min-height:46px;padding:0 20px;border:1px solid rgba(126,180,224,.58);border-radius:3px;background:rgba(7,20,31,.88);box-shadow:0 8px 24px rgba(0,0,0,.38);backdrop-filter:blur(8px);color:#e6f1ff;font:inherit;font-size:14px;font-weight:700;letter-spacing:.12em;cursor:pointer}
+.announcement-button:hover,.announcement-button:focus-visible{border-color:#38f2c8;background:rgba(12,37,47,.96);color:#38f2c8;outline:none}
+.announcement-panel{width:min(680px,92vw);max-height:min(82dvh,760px);padding:24px clamp(18px,4vw,34px);overflow:auto;border:1px solid #2f5570;border-radius:4px;background:linear-gradient(145deg,rgba(21,34,54,.99),rgba(9,16,28,.99));box-shadow:0 18px 56px rgba(0,0,0,.5);scrollbar-color:#3c5a7a rgba(7,14,24,.45)}
+.announcement-header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-bottom:14px;border-bottom:1px solid rgba(60,90,122,.62)}
+.announcement-header h1{margin:0;color:#e6f1ff;font-size:clamp(22px,4vw,30px);letter-spacing:.1em}
+.announcement-eyebrow{margin:0 0 5px;color:#38f2c8;font:700 10px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.2em}
+.announcement-close{flex:0 0 auto;width:40px;height:40px;border:1px solid rgba(126,180,224,.42);border-radius:3px;background:rgba(12,25,41,.88);color:#e6f1ff;font-size:25px;line-height:1;cursor:pointer}
+.announcement-close:hover,.announcement-close:focus-visible{border-color:#38f2c8;color:#38f2c8;outline:none}
+.announcement-loading{margin:14px 0 8px;color:#9eb2c9;font-size:13px;line-height:1.6}
+.announcement-list{display:grid;gap:12px;margin:12px 0 0;padding:0;list-style:none}
+.announcement-card{padding:14px;border:1px solid rgba(60,90,122,.58);background:rgba(7,16,28,.56)}
+.announcement-card h2{margin:0;color:#38f2c8;font-size:17px;line-height:1.45}
+.announcement-card time{display:block;margin-top:4px;color:#839ab1;font-size:11px}
+.announcement-card p{margin:9px 0 0;color:#d4e2ef;font-size:14px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+.announcement-empty{padding:22px;border:1px dashed rgba(126,180,224,.3);color:#9eb2c9;text-align:center;font-size:13px;list-style:none}
+.home-screen .discord-auth[data-player-status="banned"] [data-discord-message]{color:#ff9292}
+.start-item.player-banned{filter:grayscale(1) brightness(.62);opacity:.68}
+.start-item.player-banned:hover{transform:none;filter:grayscale(1) brightness(.62)}
+@media(max-width:700px){.announcement-button{min-height:42px;padding:0 16px;font-size:13px}.announcement-panel{width:94vw;max-height:78dvh;padding:19px 16px}.announcement-card{padding:12px}.announcement-card h2{font-size:15px}.announcement-card p{font-size:13px}}

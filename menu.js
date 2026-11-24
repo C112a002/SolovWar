@@ -7,6 +7,12 @@
   const settingsClose = document.querySelector(".settings-close");
   const exitButton = document.querySelector(".exit-item");
   const notice = document.querySelector("#notice");
+  const startLink = document.querySelector(".start-item");
+  const announcementButton = document.querySelector("#announcement-open");
+  const announcementDialog = document.querySelector("#announcement-dialog");
+  const announcementClose = document.querySelector(".announcement-close");
+  const announcementList = document.querySelector("#announcement-list");
+  const announcementLoading = document.querySelector("#announcement-loading");
   const status = document.querySelector("#settings-status");
   const keybindList = document.querySelector("#keybind-list");
   const desktopKeys = window.matchMedia("(pointer: fine)");
@@ -56,6 +62,72 @@
     notice.hidden = false;
     window.clearTimeout(noticeTimer);
     noticeTimer = window.setTimeout(() => { notice.hidden = true; }, 3800);
+  }
+
+  function updateStartAvailability() {
+    const auth = window.SolovWarDiscord;
+    const loggedIn = Boolean(auth?.getUser());
+    const access = auth?.getPlayerAccess();
+    const statusValue = access?.status || "unknown";
+    const unavailable = loggedIn && statusValue !== "allowed";
+    startLink.classList.toggle("player-banned", statusValue === "banned");
+    startLink.setAttribute("aria-disabled", String(unavailable));
+  }
+
+  function renderAnnouncements(items) {
+    announcementList.replaceChildren();
+    if (!items.length) {
+      const empty = document.createElement("li");
+      empty.className = "announcement-empty";
+      empty.textContent = "目前沒有已發布的公告。";
+      announcementList.append(empty);
+      return;
+    }
+    for (const item of items) {
+      const card = document.createElement("li");
+      card.className = "announcement-card";
+      const title = document.createElement("h2");
+      title.textContent = item.title;
+      const time = document.createElement("time");
+      const seconds = Number(item.published_at);
+      if (Number.isFinite(seconds) && seconds > 0) {
+        const date = new Date(seconds * 1000);
+        time.dateTime = date.toISOString();
+        time.textContent = date.toLocaleString("zh-TW", { dateStyle: "medium", timeStyle: "short" });
+      } else {
+        time.textContent = "發布時間未提供";
+      }
+      const body = document.createElement("p");
+      body.textContent = item.body;
+      card.append(title, time, body);
+      announcementList.append(card);
+    }
+  }
+
+  async function loadAnnouncements() {
+    const workerUrl = window.SolovWarDiscord?.getWorkerUrl();
+    if (!workerUrl) {
+      announcementLoading.textContent = "公告服務尚未設定，請稍後再試。";
+      renderAnnouncements([]);
+      return;
+    }
+    announcementLoading.textContent = "正在載入公告…";
+    try {
+      const response = await fetch(`${workerUrl}/api/announcements`);
+      if (!response.ok) throw new Error("announcement_load_failed");
+      const result = await response.json();
+      renderAnnouncements(Array.isArray(result.announcements) ? result.announcements : []);
+      announcementLoading.textContent = "公告由遊戲管理後台即時更新。";
+    } catch {
+      announcementLoading.textContent = "目前無法連線至公告服務，請稍後再試。";
+      renderAnnouncements([]);
+    }
+  }
+
+  function closeAnnouncements({ restoreFocus = true } = {}) {
+    if (announcementDialog.hidden) return;
+    announcementDialog.hidden = true;
+    if (restoreFocus) announcementButton.focus();
   }
 
   function displayCode(code) {
@@ -160,6 +232,32 @@
   aboutDialog.addEventListener("click", event => {
     if (event.target === aboutDialog) closeAbout();
   });
+  announcementButton.addEventListener("click", () => {
+    announcementDialog.hidden = false;
+    announcementClose.focus();
+    loadAnnouncements();
+  });
+  announcementClose.addEventListener("click", () => closeAnnouncements());
+  announcementDialog.addEventListener("click", event => {
+    if (event.target === announcementDialog) closeAnnouncements();
+  });
+  startLink.addEventListener("click", event => {
+    const auth = window.SolovWarDiscord;
+    if (!auth?.getUser()) return;
+    const access = auth.getPlayerAccess();
+    if (access?.status === "allowed") return;
+    event.preventDefault();
+    if (access?.status === "banned") {
+      showNotice(`此 Discord 帳戶已被封鎖，無法開始遊戲。${access.reason ? `原因：${access.reason}` : ""}`);
+    } else if (access?.status === "checking") {
+      showNotice("正在確認 Discord 帳戶狀態，請稍候再開始遊戲。");
+    } else {
+      showNotice("目前無法確認 Discord 帳戶狀態，請稍後再試；也可以先登出後以訪客身分遊玩。");
+    }
+  });
+  window.addEventListener("solovwar:auth-updated", updateStartAvailability);
+  updateStartAvailability();
+  loadAnnouncements();
 
   document.addEventListener("keydown", event => {
     if (capturing) {
@@ -192,6 +290,7 @@
     if (event.key === "Escape") {
       if (!settingsDialog.hidden) closeSettings();
       else if (!aboutDialog.hidden) closeAbout();
+      else if (!announcementDialog.hidden) closeAnnouncements();
     }
   });
 
