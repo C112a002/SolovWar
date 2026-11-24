@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USDT 贊助元件</title>
+  <style>
+    .donate-box {
+      max-width: 340px;
+      padding: 24px 20px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      background: #fff;
+    }
+    .donate-box h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #111;
+    }
+	.donate-txt {
+      color: #111111;
+      font-size: 6px;
+      margin: 14px 0 0;
+      line-height: 1;
+    }
+    .network-tag {
+      display: inline-block;
+      background: #26a17b;
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .qr-wrapper {
+      margin: 18px 0 14px;
+    }
+    .qr-wrapper img {
+      width: 180px;
+      height: 180px;
+      border-radius: 8px;
+    }
+    .address-box {
+      background: #f3f4f6;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      word-break: break-all;
+      color: #111111;
+      line-height: 1.5;
+      margin-bottom: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .copy-btn {
+      background: #111;
+      color: #fff;
+      border: none;
+      padding: 11px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    .copy-btn:hover {
+      background: #333;
+    }
+    .copy-btn.copied {
+      background: #26a17b;
+    }
+    .warning {
+      color: #d93025;
+      font-size: 12px;
+      margin: 14px 0 0;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="donate-box">
+  <h3>加密貨幣贊助 (USDT)</h3>
+<div class="donate-txt">
+  <h3>贊助我們的遊戲，讓它能夠變得更好</h3>
+  <span class="network-tag">支援網路：Polygon</span>
+  
+  <div class="qr-wrapper">
+    <!-- 這裡的地址請改成你自己的 -->
+    <img id="qr-code" src="" alt="USDT QR Code">
+  </div>
+
+  <div class="address-box" id="wallet-address">0xc9Af628760Ec19435f6BA17e0C67E24e7188bf5f</div>
+  
+  <button class="copy-btn" id="copy-btn" onclick="copyAddress()">複製收款地址</button>
+  <p class="warning">⚠️ 轉帳前請務必確認選擇正確的區塊鏈網路，選錯網路將導致資產永久遺失。</p>
+</div>
+
+<script>
+  // ===== 收款地址 =====
+  const WALLET_ADDRESS = "0xc9Af628760Ec19435f6BA17e0C67E24e7188bf5f";
+  // ========================
+
+  document.getElementById("wallet-address").innerText = WALLET_ADDRESS;
+  document.getElementById("qr-code").src = 
+    `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${WALLET_ADDRESS}`;
+
+  function copyAddress() {
+    navigator.clipboard.writeText(WALLET_ADDRESS).then(() => {
+      const btn = document.getElementById("copy-btn");
+      btn.innerText = "已複製！";
+      btn.classList.add("copied");
+      
+      setTimeout(() => {
+        btn.innerText = "複製收款地址";
+        btn.classList.remove("copied");
+      }, 2500);
+    });
+  }
+</script>
+
+</body>
+</html>
