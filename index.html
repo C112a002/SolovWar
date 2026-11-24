@@ -33,14 +33,15 @@
           <img src="./menu-assets/exit.png" alt="" draggable="false">
         </button>
       </nav>
-      <section class="discord-auth" data-discord-auth aria-label="Discord 登入">
-        <img data-discord-avatar alt="" hidden>
-        <span data-discord-name>尚未登入 Discord</span>
-        <button type="button" data-discord-login>使用 Discord 登入</button>
-        <button type="button" data-discord-logout hidden>登出</button>
-        <small data-discord-message role="status" aria-live="polite"></small>
-      </section>
     </div>
+
+    <section class="discord-auth" data-discord-auth aria-label="Discord 登入">
+      <img data-discord-avatar alt="" hidden>
+      <span data-discord-name>尚未登入 Discord</span>
+      <button type="button" data-discord-login>使用 Discord 登入</button>
+      <button type="button" data-discord-logout hidden>登出</button>
+      <small data-discord-message role="status" aria-live="polite"></small>
+    </section>
 
     <div class="dialog-backdrop" id="settings-dialog" hidden>
       <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
