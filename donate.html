@@ -5,15 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>USDT 贊助元件</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      min-height: 100%;
+      margin: 0;
+    }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      background: radial-gradient(ellipse at center, #17283b 0%, #0b111d 72%);
+    }
     .donate-box {
+      position: relative;
+      width: min(100%, 340px);
       max-width: 340px;
-      padding: 24px 20px;
+      margin: 0;
+      padding: 60px 20px 24px;
       border: 1px solid #e5e7eb;
       border-radius: 14px;
       text-align: center;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
       box-shadow: 0 4px 16px rgba(0,0,0,0.06);
       background: #fff;
+    }
+    .close-page {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 34px;
+      padding: 0 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #f3f4f6;
+      color: #111;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .close-page:hover {
+      background: #e5e7eb;
+      border-color: #9ca3af;
+    }
+    .close-page:focus-visible {
+      outline: 2px solid #26a17b;
+      outline-offset: 2px;
     }
     .donate-box h3 {
       margin: 0 0 12px;
@@ -85,6 +132,7 @@
 <body>
 
 <div class="donate-box">
+  <button class="close-page" id="close-page" type="button" aria-label="關閉贊助頁並返回主選單"><span aria-hidden="true">×</span>關閉</button>
   <h3>加密貨幣贊助 (USDT)</h3>
 <div class="donate-txt">
   <h3>贊助我們的遊戲，讓它能夠變得更好</h3>
@@ -109,6 +157,18 @@
   document.getElementById("wallet-address").innerText = WALLET_ADDRESS;
   document.getElementById("qr-code").src = 
     `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${WALLET_ADDRESS}`;
+
+  document.getElementById("close-page").addEventListener("click", () => {
+    let sameOriginReferrer = false;
+    try {
+      sameOriginReferrer = Boolean(document.referrer) && new URL(document.referrer).origin === window.location.origin;
+    } catch {}
+    if (sameOriginReferrer && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.replace("./index.html");
+  });
 
   function copyAddress() {
     navigator.clipboard.writeText(WALLET_ADDRESS).then(() => {
