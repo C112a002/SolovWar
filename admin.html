@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b111d">
+  <meta name="description" content="SolovWar Discord 後台管理員權限設定">
+  <title>SolovWar｜後台</title>
+  <link rel="stylesheet" href="./admin.css?v=admin-access-1">
+</head>
+<body>
+  <main class="admin-shell">
+    <nav class="admin-nav" aria-label="頁面導覽">
+      <a href="./index.html">← 返回主選單</a>
+      <span>SOLOVWAR / ADMIN</span>
+    </nav>
+
+    <header class="admin-heading">
+      <p class="eyebrow">ACCESS CONTROL</p>
+      <h1>後台權限管理</h1>
+      <p>只有已授權的 Discord 帳戶可以進入本頁並管理名單。</p>
+    </header>
+
+    <section class="discord-auth" data-discord-auth aria-label="Discord 登入狀態">
+      <img data-discord-avatar alt="" hidden>
+      <span data-discord-name>尚未登入 Discord</span>
+      <button type="button" data-discord-login>使用 Discord 登入</button>
+      <button type="button" data-discord-logout hidden>登出</button>
+      <small data-discord-message role="status" aria-live="polite"></small>
+    </section>
+
+    <p class="admin-status" id="admin-status" role="status" aria-live="polite">正在確認登入與後台權限…</p>
+
+    <section class="admin-content" id="admin-content" hidden aria-labelledby="allowlist-title">
+      <form class="add-admin-form" id="add-admin-form">
+        <label for="discord-id">新增可進入後台的 Discord ID</label>
+        <div class="form-row">
+          <input id="discord-id" name="discordId" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]{17,20}" minlength="17" maxlength="20" placeholder="例如：1096316400529842206" required>
+          <button type="submit" id="add-admin-button">新增授權</button>
+        </div>
+        <small>請輸入 17–20 位數字的 Discord 使用者 ID，不要輸入使用者名稱。</small>
+      </form>
+
+      <div class="list-heading">
+        <h2 id="allowlist-title">可進入後台的 ID</h2>
+        <button class="secondary-button" type="button" id="refresh-list">重新載入</button>
+      </div>
+      <ul class="admin-list" id="admin-list" aria-live="polite"></ul>
+      <p class="admin-footnote">主要管理員 ID 固定保留，無法從此清單移除。名單儲存在 Cloudflare D1，所有後台管理員看到的是同一份資料。</p>
+    </section>
+  </main>
+
+  <script src="./auth-config.js"></script>
+  <script src="./discord-auth.js" defer></script>
+  <script src="./admin.js" defer></script>
+</body>
+</html>

@@ -103,3 +103,7 @@ button,a{-webkit-tap-highlight-color:transparent}
 
 .discord-auth{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;max-width:min(92vw,520px);margin:20px auto 0;padding:10px 14px;border:1px solid rgba(182,204,222,.28);border-radius:12px;background:rgba(8,16,26,.72);color:#dbe8f2;font-size:13px;backdrop-filter:blur(10px)}
 .discord-auth img{width:28px;height:28px;border-radius:50%;object-fit:cover}.discord-auth button{border:1px solid rgba(126,180,224,.55);border-radius:7px;padding:7px 11px;background:#192f45;color:#eaf4ff;cursor:pointer;font:inherit}.discord-auth button:hover{background:#245170}.discord-auth small{flex-basis:100%;color:#f0bd83;text-align:center;min-height:1.1em}
+
+.home-screen .discord-auth .admin-button{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(56,242,200,.65);border-radius:7px;padding:7px 12px;background:rgba(12,45,51,.92);color:#38f2c8;text-decoration:none;font:inherit;font-weight:700;transition:background .18s,border-color .18s,transform .18s}
+.home-screen .discord-auth .admin-button:hover,.home-screen .discord-auth .admin-button:focus-visible{transform:translateY(-1px);border-color:#38f2c8;background:#183f48;outline:none}
+.home-screen .discord-auth .admin-button[hidden]{display:none}

@@ -3,7 +3,7 @@
   const storageKey = "solovwar-discord-session";
   const workerUrl = String(config.workerUrl || "").replace(/\/$/, "");
   const currentUrl = () => `${location.origin}${location.pathname}${location.search}`;
-  const state = { user: null };
+  const state = { user: null, canAccessAdmin: false, isAdminOwner: false };
 
   function getToken() {
     try { return localStorage.getItem(storageKey) || ""; } catch { return ""; }
@@ -35,19 +35,62 @@
       }
       panel.dataset.loggedIn = loggedIn ? "true" : "false";
     });
+    document.querySelectorAll("[data-admin-button]").forEach(button => {
+      button.hidden = !state.user || !state.canAccessAdmin;
+    });
+    window.dispatchEvent(new CustomEvent("solovwar:auth-updated", {
+      detail: { loggedIn: Boolean(state.user), canAccessAdmin: state.canAccessAdmin, isAdminOwner: state.isAdminOwner }
+    }));
+  }
+  async function loadAdminAccess(token) {
+    state.canAccessAdmin = false;
+    state.isAdminOwner = false;
+    if (!workerUrl || !token) { render(); return; }
+    try {
+      const response = await fetch(`${workerUrl}/api/admin/status`, { headers: { Authorization: `Bearer ${token}` } });
+      if (response.ok) {
+        const access = await response.json();
+        if (getToken() === token) {
+          state.canAccessAdmin = Boolean(access.authorized);
+          state.isAdminOwner = Boolean(access.isOwner);
+        }
+      }
+    } catch {
+      // Keep the admin entry hidden if the authorization service cannot be reached.
+    }
+    if (getToken() === token) render();
   }
   async function loadProfile() {
     const token = getToken();
-    if (!token) { render(); return; }
-    if (!workerUrl) { setToken(""); render(); return; }
+    if (!token) {
+      state.user = null;
+      state.canAccessAdmin = false;
+      state.isAdminOwner = false;
+      render();
+      return;
+    }
+    if (!workerUrl) {
+      setToken("");
+      state.user = null;
+      state.canAccessAdmin = false;
+      state.isAdminOwner = false;
+      render();
+      return;
+    }
     try {
       const response = await fetch(`${workerUrl}/api/me`, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error("session_expired");
-      state.user = (await response.json()).user;
+      const profile = await response.json();
+      if (getToken() !== token) return;
+      state.user = profile.user;
       render();
+      await loadAdminAccess(token);
     } catch {
+      if (getToken() !== token) return;
       setToken("");
       state.user = null;
+      state.canAccessAdmin = false;
+      state.isAdminOwner = false;
       render();
     }
   }
@@ -62,6 +105,8 @@
   function logout() {
     setToken("");
     state.user = null;
+    state.canAccessAdmin = false;
+    state.isAdminOwner = false;
     render();
     showMessage("已登出 Discord。");
   }
@@ -78,7 +123,14 @@
       const clean = new URL(location.href); clean.searchParams.delete("discord_error"); history.replaceState(null, "", clean.pathname + clean.search + clean.hash);
     }
   }
-  window.SolovWarDiscord = Object.freeze({ login, logout, getUser: () => state.user });
+  window.SolovWarDiscord = Object.freeze({
+    login,
+    logout,
+    getUser: () => state.user,
+    getToken,
+    getWorkerUrl: () => workerUrl,
+    getAdminStatus: () => ({ authorized: state.canAccessAdmin, isOwner: state.isAdminOwner })
+  });
   document.addEventListener("click", event => {
     const loginButton = event.target.closest("[data-discord-login]");
     const logoutButton = event.target.closest("[data-discord-logout]");

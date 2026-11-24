@@ -57,7 +57,7 @@ async function verifySession(secret, token) {
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", ...headers }
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers }
   });
 }
 
@@ -67,9 +67,14 @@ function corsHeaders(request, env) {
     "access-control-allow-origin": origin,
     "access-control-allow-credentials": "true",
     "access-control-allow-headers": "Authorization, Content-Type",
-    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-max-age": "86400",
     "vary": "Origin"
   } : {};
+}
+
+function validDiscordId(value) {
+  return typeof value === "string" && /^\d{17,20}$/.test(value);
 }
 
 function allowedReturnUrl(value, env) {
@@ -109,6 +114,36 @@ async function readStateCookie(request, env) {
 
 function clearStateCookie() {
   return "solovwar_oauth_state=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Lax";
+}
+
+async function sessionFromRequest(request, env) {
+  const authorization = request.headers.get("Authorization") || "";
+  const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  const session = token ? await verifySession(env.SESSION_SECRET, token) : null;
+  if (session?.iss !== "solovwar-auth" || !validDiscordId(session.sub)) return null;
+  return session;
+}
+
+async function isAuthorizedAdmin(env, discordId) {
+  const ownerId = String(env.OWNER_DISCORD_ID || "");
+  if (validDiscordId(ownerId) && discordId === ownerId) return true;
+  if (!env.ADMIN_DB) throw new Error("admin_database_unbound");
+  const record = await env.ADMIN_DB
+    .prepare("SELECT discord_id FROM admin_allowlist WHERE discord_id = ? LIMIT 1")
+    .bind(discordId)
+    .first();
+  return Boolean(record);
+}
+
+async function adminIds(env) {
+  if (!env.ADMIN_DB) throw new Error("admin_database_unbound");
+  const result = await env.ADMIN_DB
+    .prepare("SELECT discord_id FROM admin_allowlist ORDER BY discord_id")
+    .all();
+  const ownerId = String(env.OWNER_DISCORD_ID || "");
+  const ids = new Set((result.results || []).map(row => row.discord_id));
+  if (validDiscordId(ownerId)) ids.add(ownerId);
+  return { ids: [...ids].sort(), ownerId };
 }
 
 async function start(request, env) {
@@ -184,21 +219,84 @@ async function callback(request, env) {
 }
 
 async function me(request, env) {
-  const authorization = request.headers.get("Authorization") || "";
-  const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
-  const session = token ? await verifySession(env.SESSION_SECRET, token) : null;
   const headers = corsHeaders(request, env);
+  const session = await sessionFromRequest(request, env);
   if (!session) return json({ error: "unauthorized" }, 401, headers);
   return json({ user: { id: session.sub, username: session.username, global_name: session.global_name, avatar: session.avatar } }, 200, headers);
+}
+
+async function adminStatus(request, env) {
+  const headers = corsHeaders(request, env);
+  const session = await sessionFromRequest(request, env);
+  if (!session) return json({ error: "unauthorized" }, 401, headers);
+  try {
+    const isOwner = session.sub === String(env.OWNER_DISCORD_ID || "");
+    const authorized = await isAuthorizedAdmin(env, session.sub);
+    return json({ authorized, isOwner }, 200, headers);
+  } catch (error) {
+    console.error("Admin access check failed", error);
+    return json({ error: "admin_database_unavailable" }, 503, headers);
+  }
+}
+
+async function adminAllowlist(request, env) {
+  const headers = corsHeaders(request, env);
+  const session = await sessionFromRequest(request, env);
+  if (!session) return json({ error: "unauthorized" }, 401, headers);
+
+  try {
+    if (!(await isAuthorizedAdmin(env, session.sub))) return json({ error: "forbidden" }, 403, headers);
+    if (request.method === "GET") return json(await adminIds(env), 200, headers);
+    if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
+
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "invalid_json" }, 400, headers);
+    }
+    const targetId = body?.id;
+    if (!validDiscordId(targetId)) return json({ error: "invalid_discord_id" }, 400, headers);
+
+    const ownerId = String(env.OWNER_DISCORD_ID || "");
+    if (body.action === "add") {
+      await env.ADMIN_DB
+        .prepare("INSERT OR IGNORE INTO admin_allowlist (discord_id, added_by) VALUES (?, ?)")
+        .bind(targetId, session.sub)
+        .run();
+    } else if (body.action === "remove") {
+      if (targetId === ownerId) return json({ error: "owner_cannot_be_removed" }, 400, headers);
+      await env.ADMIN_DB
+        .prepare("DELETE FROM admin_allowlist WHERE discord_id = ?")
+        .bind(targetId)
+        .run();
+    } else {
+      return json({ error: "invalid_action" }, 400, headers);
+    }
+    return json({ ok: true, ...await adminIds(env) }, 200, headers);
+  } catch (error) {
+    console.error("Admin allowlist request failed", error);
+    if (error?.message === "admin_database_unbound") return json({ error: "admin_database_unavailable" }, 503, headers);
+    return json({ error: "admin_database_unavailable" }, 503, headers);
+  }
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (request.method === "OPTIONS" && url.pathname === "/api/me") return new Response(null, { status: 204, headers: corsHeaders(request, env) });
-    if (url.pathname === "/auth/discord/start" && request.method === "GET") return start(request, env);
-    if (url.pathname === "/auth/discord/callback" && request.method === "GET") return callback(request, env);
-    if (url.pathname === "/api/me" && request.method === "GET") return me(request, env);
-    return json({ service: "SolovWar Discord auth", ok: true });
+    try {
+      if (request.method === "OPTIONS" && url.pathname.startsWith("/api/")) {
+        return new Response(null, { status: 204, headers: corsHeaders(request, env) });
+      }
+      if (url.pathname === "/auth/discord/start" && request.method === "GET") return await start(request, env);
+      if (url.pathname === "/auth/discord/callback" && request.method === "GET") return await callback(request, env);
+      if (url.pathname === "/api/me" && request.method === "GET") return await me(request, env);
+      if (url.pathname === "/api/admin/status" && request.method === "GET") return await adminStatus(request, env);
+      if (url.pathname === "/api/admin/allowlist" && ["GET", "POST"].includes(request.method)) return await adminAllowlist(request, env);
+      return json({ service: "SolovWar Discord auth", ok: true });
+    } catch (error) {
+      console.error("Worker request failed", error);
+      return json({ error: "internal_error" }, 500, corsHeaders(request, env));
+    }
   }
 };
