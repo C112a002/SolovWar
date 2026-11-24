@@ -27,7 +27,7 @@
       const loggedIn = Boolean(state.user);
       if (login) login.hidden = loggedIn;
       if (logout) logout.hidden = !loggedIn;
-      if (name) name.textContent = loggedIn ? `Discord：${state.user.global_name || state.user.username}` : "尚未登入 Discord";
+      if (name) name.textContent = loggedIn ? (state.user.global_name || state.user.username) : "尚未登入 Discord";
       if (avatar) {
         const src = avatarUrl(state.user);
         avatar.hidden = !src;
