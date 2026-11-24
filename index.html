@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./manifest.json">
   <link rel="preload" as="image" href="./menu-assets/background.gif">
-  <link rel="stylesheet" href="./menu.css">
+  <link rel="stylesheet" href="./menu.css?v=about-controls-1">
 </head>
 <body>
   <main class="home-screen">
@@ -86,8 +86,32 @@
     <div class="dialog-backdrop" id="about-dialog" hidden>
       <section class="about-panel" role="dialog" aria-modal="true" aria-labelledby="about-title">
         <h1 id="about-title">關於遊戲</h1>
-        <p>SolovWar 戰術射擊體驗</p>
-        <p>可先在主選單調整視角、畫質、音量與操作偏好，再進入戰場。</p>
+        <p class="about-summary">SolovWar 是逐波迎戰敵人的戰術射擊遊戲。敵人會聽聲音、尋找掩護、包抄、換彈並互相通報位置；爆頭傷害加倍，每波結束會回復生命並補滿彈藥，倒下的敵人也可能掉落急救包。</p>
+        <section class="about-controls" aria-labelledby="desktop-controls-title">
+          <h2 id="desktop-controls-title">桌機操作</h2>
+          <ul>
+            <li><kbd>W A S D</kbd> 移動，滑鼠轉向</li>
+            <li><kbd>左鍵</kbd> 開火；<kbd>右鍵</kbd>／<kbd>V</kbd> 瞄準</li>
+            <li><kbd>Y</kbd> 步槍；<kbd>U</kbd> Кра Гао 匕首</li>
+            <li><kbd>Space</kbd> 跳躍；<kbd>Shift</kbd> 衝刺</li>
+            <li><kbd>C</kbd> 蹲下／滑鏟（衝刺時按）</li>
+            <li><kbd>R</kbd> 換彈；<kbd>T</kbd> 重新出生</li>
+            <li><kbd>Esc</kbd> 暫停；<kbd>O</kbd> 開關設定</li>
+          </ul>
+        </section>
+        <section class="about-controls" aria-labelledby="mobile-controls-title">
+          <h2 id="mobile-controls-title">手機操作</h2>
+          <ul>
+            <li>左半邊拖曳虛擬搖桿移動；推到外圈可衝刺</li>
+            <li>右半邊滑動轉向</li>
+            <li>左上按鈕直接開火；右側開火鍵按住瞄準並射擊</li>
+            <li>右側按鈕可瞄準、換彈、跳躍與蹲下</li>
+            <li>右上角「設定」可調整視角、畫質與觸控按鈕</li>
+            <li>底部武器列可切換步槍／Кра Гао 匕首</li>
+            <li>衝刺移動時按蹲下可滑鏟</li>
+          </ul>
+        </section>
+        <p class="about-note">桌機按鍵可在主選單「設定」的「按鍵設定」中自訂；進入遊戲後，手機可使用虛擬搖桿與觸控按鈕。</p>
         <button class="dialog-close" type="button">返回主選單</button>
       </section>
     </div>
