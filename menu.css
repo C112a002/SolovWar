@@ -4,6 +4,12 @@ body{background:#0b111d;color:#e6f1ff;font-family:"Noto Sans TC","Microsoft Jhen
 button,a{-webkit-tap-highlight-color:transparent}
 .home-screen{position:fixed;inset:0;overflow:hidden;background:#0b111d url("./menu-assets/background.gif") center/cover no-repeat}
 .home-screen>.discord-auth{position:absolute;z-index:4;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:auto;bottom:auto;margin:0;justify-content:flex-start}
+.coin-balance{position:absolute;z-index:4;top:max(12px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));display:flex;align-items:center;gap:9px;min-height:54px;padding:8px 15px;border:1px solid rgba(56,242,200,.55);border-radius:4px;background:rgba(7,20,31,.9);box-shadow:0 8px 24px rgba(0,0,0,.38),inset 0 0 18px rgba(56,242,200,.05);backdrop-filter:blur(8px);color:#e6f1ff;font-size:14px;font-weight:700;letter-spacing:.06em}
+.coin-balance img{width:30px;height:30px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 1px 4px rgba(255,205,65,.3))}
+.coin-balance-label{color:#a9bfd2}
+.coin-balance output{min-width:5ch;color:#38f2c8;text-align:right;font-variant-numeric:tabular-nums}
+.coin-balance[data-state="loading"] output{color:#b5c9d8}
+.coin-balance[data-state="guest"] output,.coin-balance[data-state="error"] output{min-width:auto;color:#f0bd83;font-size:12px}
 .home-screen::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,10,18,.62),rgba(5,10,18,.12) 58%,rgba(5,10,18,.32)),linear-gradient(0deg,rgba(4,8,14,.48),transparent 48%,rgba(4,8,14,.12));pointer-events:none}
 .menu-stage{position:absolute;left:50%;top:50%;width:min(100vw,177.7778vh);height:min(100vh,56.25vw);transform:translate(-50%,-50%)}
 .sponsor-button{position:absolute;z-index:4;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 22px;border:1px solid rgba(56,242,200,.72);border-radius:3px;background:rgba(7,20,31,.88);box-shadow:0 8px 24px rgba(0,0,0,.38),inset 0 0 18px rgba(56,242,200,.06);backdrop-filter:blur(8px);color:#e6f1ff;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.14em;transition:background .18s,border-color .18s,box-shadow .18s,transform .18s}
@@ -37,6 +43,9 @@ button,a{-webkit-tap-highlight-color:transparent}
 @media(max-width:700px){
   .menu-stage{width:100vw;height:100dvh}
   .sponsor-button{min-height:42px;padding:0 17px;font-size:14px}
+  .coin-balance{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:max(12px,env(safe-area-inset-right));min-height:44px;gap:6px;padding:6px 10px;font-size:12px}
+  .coin-balance img{width:25px;height:25px}
+  .coin-balance[data-state="guest"] output,.coin-balance[data-state="error"] output{font-size:11px}
   .menu-items{position:absolute;left:50%;top:calc(50% - 38px);right:auto;bottom:auto;width:100%;height:auto;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:clamp(4px,1.2vh,10px)}
   .menu-item{position:relative;left:auto;top:auto;flex:none;width:min(88vw,360px);height:auto;aspect-ratio:396/165;transform:none}
   .menu-item img{top:0;height:100%;transform:none}

@@ -7,3 +7,4 @@
 - [x] **bot 檔案交付與秘密保護**：只提供實際修改的 bot 檔案，不提供完整 bot ZIP；附件中的 AI API key、token 及其他 secret 不得複述、寫入提交或放進交付檔。已交付精簡 ZIP，僅含五個修改檔；敏感字串掃描未發現疑似憑證。
 - [x] **發佈準備與線上核驗**：更新 Pages 發佈用遊戲 ZIP 與 Worker/migration 原始碼；完成適用的語法與餘額路徑測試。已完成 Python／Worker ESM 語法檢查、Wrangler dry-run bundle、SQLite migration／交易冪等測試、礦場逾時恢復測試與 ZIP integrity check；程式碼已推送至 `origin/main`。Cloudflare Worker 已部署，D1 migration history 已核對並記錄 `0001`–`0003`；玩家與 bot API 在未授權請求下均回應 401。GitHub Pages 對應 `c734ad1` 的工作流成功，首頁回應 HTTP 200。bot 主機設定與舊餘額匯入仍待完成。
 - [x] **主選單 C 幣圖標**：讓遊戲裡的主選單在顯示 C 幣時會使用使用者提供的圖標。已以原始透明 PNG 替換餘額欄的文字標籤，加入自適應像素化圖示樣式；C 幣讀取與訪客／錯誤狀態邏輯不變。已驗證圖檔 hash、透明通道、HTML/CSS 資源引用及 ZIP 完整性。
+- [x] **根目錄主選單 C 幣面板**：「遊戲的主選單並未正常顯示C幣的面板在右上角」；在主選單右上角顯示提供的金幣圖標及登入玩家的 Discord 共用 C 幣餘額，訪客顯示登入提示，並處理載入／不可用狀態，失敗時不得顯示為 0；登入或登出時重新更新，且不新增遊戲內獲幣方式。已完成主選單 HTML/CSS/JS，圖標載入自 `./game/assets/ui/coin-icon.png`，沿用現有登入 session 查詢 `/api/player/coins`。

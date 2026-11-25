@@ -15,6 +15,8 @@
   const announcementLoading = document.querySelector("#announcement-loading");
   const status = document.querySelector("#settings-status");
   const keybindList = document.querySelector("#keybind-list");
+  const coinBalancePanel = document.querySelector("[data-coin-balance]");
+  const coinAmount = document.querySelector("[data-coin-amount]");
   const desktopKeys = window.matchMedia("(pointer: fine)");
   const touchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
   const STORAGE_KEY = "solovwar-settings";
@@ -34,6 +36,7 @@
   };
   let noticeTimer;
   let capturing = null;
+  let coinRequestId = 0;
 
   function readSettings() {
     try {
@@ -72,6 +75,42 @@
     const unavailable = loggedIn && statusValue !== "allowed";
     startLink.classList.toggle("player-banned", statusValue === "banned");
     startLink.setAttribute("aria-disabled", String(unavailable));
+  }
+
+  async function refreshCoinBalance() {
+    const requestId = ++coinRequestId;
+    const auth = window.SolovWarDiscord;
+    const token = auth?.getToken();
+    if (!token) {
+      coinBalancePanel.dataset.state = "guest";
+      coinAmount.textContent = "登入後查看";
+      return;
+    }
+
+    const workerUrl = auth?.getWorkerUrl();
+    if (!workerUrl) {
+      coinBalancePanel.dataset.state = "error";
+      coinAmount.textContent = "暫時不可用";
+      return;
+    }
+    coinBalancePanel.dataset.state = "loading";
+    coinAmount.textContent = "載入中…";
+    try {
+      const response = await fetch(`${workerUrl}/api/player/coins`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store"
+      });
+      if (!response.ok) throw new Error("coin_balance_unavailable");
+      const result = await response.json();
+      if (requestId !== coinRequestId || auth.getToken() !== token) return;
+      if (!Number.isSafeInteger(result.balance) || result.balance < 0) throw new Error("invalid_coin_balance");
+      coinBalancePanel.dataset.state = "ready";
+      coinAmount.textContent = result.balance.toLocaleString("zh-TW");
+    } catch {
+      if (requestId !== coinRequestId) return;
+      coinBalancePanel.dataset.state = "error";
+      coinAmount.textContent = "暫時不可用";
+    }
   }
 
   function renderAnnouncements(items) {
@@ -255,8 +294,12 @@
       showNotice("目前無法確認 Discord 帳戶狀態，請稍後再試；也可以先登出後以訪客身分遊玩。");
     }
   });
-  window.addEventListener("solovwar:auth-updated", updateStartAvailability);
+  window.addEventListener("solovwar:auth-updated", () => {
+    updateStartAvailability();
+    refreshCoinBalance();
+  });
   updateStartAvailability();
+  refreshCoinBalance();
   loadAnnouncements();
 
   document.addEventListener("keydown", event => {
