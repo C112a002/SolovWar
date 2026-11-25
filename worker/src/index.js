@@ -7,6 +7,8 @@ function base64url(input) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+import { getPlayerCoinBalance, handleBotCoinRequest } from "./coins.js";
+
 function fromBase64url(value) {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4);
   const binary = atob(normalized);
@@ -540,6 +542,12 @@ export default {
       if (url.pathname === "/api/admin/players" && ["GET", "POST"].includes(request.method)) return await adminPlayers(request, env);
       if (url.pathname === "/api/admin/stats" && request.method === "GET") return await adminStats(request, env);
       if (url.pathname === "/api/player/status" && request.method === "GET") return await playerStatus(request, env);
+      if (url.pathname === "/api/player/coins" && request.method === "GET") {
+        return await getPlayerCoinBalance(request, env, sessionFromRequest, corsHeaders);
+      }
+      if (url.pathname.startsWith("/api/bot/coins/")) {
+        return await handleBotCoinRequest(request, env, url.pathname);
+      }
       if (url.pathname === "/api/game/session/start" && request.method === "POST") return await startGameSession(request, env);
       if (url.pathname === "/api/game/session/end" && request.method === "POST") return await endGameSession(request, env);
       return json({ service: "SolovWar Discord auth", ok: true });

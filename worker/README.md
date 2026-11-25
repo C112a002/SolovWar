@@ -90,3 +90,29 @@ npx wrangler deploy
 | `GET /api/admin/stats` | 取得後台統計 | 已授權後台管理員 |
 
 遊戲 session 由頁面進入時建立，離開頁面時以 `pagehide` 回報結束；瀏覽器強制關閉、斷線或中止請求可能使部分 session 沒有結束時間。來源 IP 僅供 Cloudflare 限流計數，不會寫入 D1；統計資料本身不包含 IP 位址。
+
+
+## 6. Discord bot 與遊戲共用 C 幣
+
+遊戲中已登入玩家只能透過 `GET /api/player/coins` 讀取本人餘額；Worker 以 Discord session 的簽章 ID 判斷身分，不接受前端傳入其他玩家 ID。訪客不會呼叫或讀取玩家餘額。bot 透過獨立的 `COIN_BOT_API_SECRET` 使用下表 API；任何 bot secret 都不可放入 Git、Pages ZIP、遊戲前端或公開 log。
+
+| Method / path | 用途 | 權限 |
+| --- | --- | --- |
+| `GET /api/player/coins` | 登入玩家讀取本人 C 幣餘額 | 有效 Discord session |
+| `GET /api/bot/coins/balance?userId=...` | bot 讀取餘額與簽到／礦場冷卻欄位 | `Authorization: Bearer <bot secret>` |
+| `POST /api/bot/coins/operation` | bot 執行 `add`、`spend`、`transfer`、`daily`、`gamble`、`mine`；每個變動操作需附唯一 `idempotencyKey` | 同上 |
+| `POST /api/bot/coins/import` | 首次匯入最多 100 個舊帳戶；對已存在帳戶採 `INSERT OR IGNORE`，不覆寫 D1 餘額 | 同上 |
+
+升級時先套用 `migrations/0003_shared_coins.sql`，再部署 Worker：
+
+```bash
+npx wrangler d1 migrations apply solovwar-admin-access --remote
+npx wrangler secret put COIN_BOT_API_SECRET
+npx wrangler deploy
+```
+
+`COIN_BOT_API_SECRET` 必須是至少 32 字元的高熵隨機值。可在可信任的管理環境產生（例如 `openssl rand -hex 32`），並安全地將同一值分別設定在 Cloudflare Worker secret 與 bot 執行環境的 `SOLVOWAR_COINS_API_SECRET`；不要把值貼到聊天、提交至 repo 或寫進公開設定檔。Worker API 根網址設定為 bot 環境變數 `SOLVOWAR_COINS_API_URL`（例如 `https://<worker-domain>`，不含結尾斜線）。若缺少 Worker secret，bot API 會回傳 503，不能視為同步已啟用。
+
+bot 設定完成後，以修改版 `coin.py` 啟動 bot 時，會從其目前 `bot.db` 的 `coins` 資料表分批匯入舊帳戶；保留 `last_daily`、`last_mine`，只新增 D1 尚未存在的帳戶。匯入不會刪除或覆寫 D1 已有錢包，故應先確認使用正確的主資料庫檔案，而非舊備份。舊 bot 在切換前仍可能只寫本機 SQLite；首次匯入應在停止舊版 bot 並以新版設定啟動時執行，以避免切換期間新增的本機變更未被納入。
+
+礦場自動入帳使用本機 SQLite outbox 和穩定 operation ID；建造／升級則先保存待處理交易，再以同一冪等 ID 執行 D1 扣款，重啟後可恢復未完成的本地工廠更新。此設計不新增遊戲內獲幣方式；遊戲 HUD 僅顯示已登入玩家的共用餘額。
