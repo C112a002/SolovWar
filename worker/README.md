@@ -99,6 +99,7 @@ npx wrangler deploy
 | Method / path | 用途 | 權限 |
 | --- | --- | --- |
 | `GET /api/player/coins` | 登入玩家讀取本人 C 幣餘額 | 有效 Discord session |
+| `POST /api/player/coins/reward-wave` | 遊戲完成波次後申領 10 C 幣；body 為 `{ "sessionId": "...", "wave": 1 }` | 有效 Discord session |
 | `GET /api/bot/coins/balance?userId=...` | bot 讀取餘額與簽到／礦場冷卻欄位 | `Authorization: Bearer <bot secret>` |
 | `POST /api/bot/coins/operation` | bot 執行 `add`、`spend`、`transfer`、`daily`、`gamble`、`mine`；每個變動操作需附唯一 `idempotencyKey` | 同上 |
 | `POST /api/bot/coins/import` | 首次匯入最多 100 個舊帳戶；對已存在帳戶採 `INSERT OR IGNORE`，不覆寫 D1 餘額 | 同上 |
@@ -115,4 +116,8 @@ npx wrangler deploy
 
 bot 設定完成後，以修改版 `coin.py` 啟動 bot 時，會從其目前 `bot.db` 的 `coins` 資料表分批匯入舊帳戶；保留 `last_daily`、`last_mine`，只新增 D1 尚未存在的帳戶。匯入不會刪除或覆寫 D1 已有錢包，故應先確認使用正確的主資料庫檔案，而非舊備份。舊 bot 在切換前仍可能只寫本機 SQLite；首次匯入應在停止舊版 bot 並以新版設定啟動時執行，以避免切換期間新增的本機變更未被納入。
 
-礦場自動入帳使用本機 SQLite outbox 和穩定 operation ID；建造／升級則先保存待處理交易，再以同一冪等 ID 執行 D1 扣款，重啟後可恢復未完成的本地工廠更新。此設計不新增遊戲內獲幣方式；遊戲 HUD 僅顯示已登入玩家的共用餘額。
+礦場自動入帳使用本機 SQLite outbox 和穩定 operation ID；建造／升級則先保存待處理交易，再以同一冪等 ID 執行 D1 扣款，重啟後可恢復未完成的本地工廠更新。
+
+### 遊戲內波次獎勵
+
+Discord 登入玩家每完成一波可申領 10 C 幣，每個 session 的波次必須依序請領；同一 session／波次只能入帳一次。每日最多 10 次，兩次成功領取至少間隔 15 秒；game session 至少建立 25 秒後才可領取。Worker 會驗證 session 屬於目前登入者、未結束且未封鎖，並使用 `GAME_SESSION_LIMITER` 保護獎勵請求；訪客不具備此資格。前端不能直接修改餘額，所有入帳均寫入與 Discord bot 共用的 D1 錢包。套用 `migrations/0004_game_coin_rewards.sql` 後再部署 Worker；獎勵資料以 `(session_id, wave)` 唯一鍵確保重複請求不會重複加值。這些檢查是伺服器端的領取限制，不代表遊戲客戶端具有完整反作弊能力。

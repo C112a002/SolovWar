@@ -1,7 +1,13 @@
 const MAX_BALANCE = Number.MAX_SAFE_INTEGER;
 const MINE_COOLDOWN_SECONDS = 6 * 60 * 60;
+const GAME_WAVE_REWARD = 10;
+const GAME_WAVE_DAILY_LIMIT = 10;
+const GAME_SESSION_MAX_WAVE = 10000;
+const GAME_WAVE_COOLDOWN_SECONDS = 15;
+const GAME_SESSION_MIN_SECONDS = 25;
 const DISCORD_ID_RE = /^\d{17,20}$/;
 const OP_ID_RE = /^[0-9a-f-]{32,36}$/i;
+const SESSION_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -66,6 +72,118 @@ export async function getPlayerCoinBalance(request, env, sessionFromRequest, cor
     return json({ balance: wallet.balance }, 200, headers);
   } catch (error) {
     console.error("Player C coin balance unavailable", error);
+    return json({ error: "coin_wallet_unavailable" }, 503, headers);
+  }
+}
+
+export async function awardPlayerWaveReward(request, env, sessionFromRequest, corsHeaders) {
+  const headers = corsHeaders(request, env);
+  const session = await sessionFromRequest(request, env);
+  if (!session) return json({ error: "unauthorized" }, 401, headers);
+
+  const limiter = env.GAME_SESSION_LIMITER;
+  if (!limiter || typeof limiter.limit !== "function") {
+    return json({ error: "rate_limiter_unavailable" }, 503, headers);
+  }
+  try {
+    const limited = await limiter.limit({ key: `discord:${session.sub}` });
+    if (!limited.success) return json({ error: "rate_limited" }, 429, headers);
+  } catch (error) {
+    console.error("Game coin reward rate limit failed", error);
+    return json({ error: "rate_limiter_unavailable" }, 503, headers);
+  }
+
+  let body;
+  try {
+    const text = await request.text();
+    if (text.length > 1024) return json({ error: "request_too_large" }, 413, headers);
+    body = JSON.parse(text);
+  } catch {
+    return json({ error: "invalid_json" }, 400, headers);
+  }
+  const sessionId = body?.sessionId;
+  const wave = body?.wave;
+  if (typeof sessionId !== "string" || !SESSION_ID_RE.test(sessionId) || !Number.isSafeInteger(wave) || wave < 1 || wave > GAME_SESSION_MAX_WAVE) {
+    return json({ error: "invalid_wave_reward" }, 400, headers);
+  }
+
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const ban = await env.ADMIN_DB.prepare("SELECT 1 AS banned FROM player_bans WHERE discord_id = ? LIMIT 1")
+      .bind(session.sub).first();
+    if (ban) return json({ error: "player_banned" }, 403, headers);
+
+    const gameSession = await env.ADMIN_DB.prepare(
+      "SELECT started_at, ended_at FROM game_sessions WHERE session_id = ? AND discord_id = ? LIMIT 1"
+    ).bind(sessionId, session.sub).first();
+    if (!gameSession || gameSession.ended_at !== null) return json({ error: "game_session_invalid" }, 403, headers);
+
+    const alreadyAwarded = await env.ADMIN_DB.prepare(
+      "SELECT amount FROM game_coin_rewards WHERE session_id = ? AND wave = ? LIMIT 1"
+    ).bind(sessionId, wave).first();
+    if (alreadyAwarded) {
+      const wallet = await readWallet(env, session.sub);
+      return json({ awarded: false, alreadyAwarded: true, balance: wallet.balance }, 200, headers);
+    }
+    if (Number(gameSession.started_at) > now - GAME_SESSION_MIN_SECONDS) {
+      return json({ error: "game_session_too_new" }, 409, headers);
+    }
+
+    const expected = await env.ADMIN_DB.prepare(
+      "SELECT COALESCE(MAX(wave), 0) + 1 AS next_wave FROM game_coin_rewards WHERE session_id = ?"
+    ).bind(sessionId).first();
+    if (wave !== Number(expected?.next_wave || 1)) return json({ error: "wave_not_eligible" }, 409, headers);
+
+    const recent = await env.ADMIN_DB.prepare(`
+      SELECT COUNT(*) AS reward_count, COALESCE(MAX(created_at), 0) AS last_reward
+      FROM game_coin_rewards WHERE discord_id = ? AND created_at >= ?
+    `).bind(session.sub, now - 86400).first();
+    if (Number(recent?.reward_count || 0) >= GAME_WAVE_DAILY_LIMIT) {
+      return json({ error: "daily_reward_limit" }, 429, headers);
+    }
+    if (Number(recent?.last_reward || 0) > now - GAME_WAVE_COOLDOWN_SECONDS) {
+      return json({ error: "reward_cooldown" }, 429, headers);
+    }
+
+    const results = await env.ADMIN_DB.batch([
+      env.ADMIN_DB.prepare(`
+        INSERT OR IGNORE INTO coin_wallets (discord_id, balance)
+        SELECT ?, 0 WHERE EXISTS (
+          SELECT 1 FROM game_sessions
+          WHERE session_id = ? AND discord_id = ? AND ended_at IS NULL
+        )
+      `).bind(session.sub, sessionId, session.sub),
+      env.ADMIN_DB.prepare(`
+        INSERT OR IGNORE INTO game_coin_rewards (session_id, discord_id, wave, amount, created_at)
+        SELECT gs.session_id, gs.discord_id, ?, ?, ? FROM game_sessions gs
+        WHERE gs.session_id = ? AND gs.discord_id = ? AND gs.ended_at IS NULL
+          AND gs.started_at <= ?
+          AND ? = (SELECT COALESCE(MAX(wave), 0) + 1 FROM game_coin_rewards WHERE session_id = ?)
+          AND (SELECT COUNT(*) FROM game_coin_rewards WHERE discord_id = ? AND created_at >= ?) < ?
+          AND (SELECT COALESCE(MAX(created_at), 0) FROM game_coin_rewards WHERE discord_id = ?) <= ?
+          AND (SELECT balance FROM coin_wallets WHERE discord_id = ?) <= ?
+      `).bind(
+        wave, GAME_WAVE_REWARD, now, sessionId, session.sub, now - GAME_SESSION_MIN_SECONDS,
+        wave, sessionId, session.sub, now - 86400, GAME_WAVE_DAILY_LIMIT,
+        session.sub, now - GAME_WAVE_COOLDOWN_SECONDS, session.sub, MAX_BALANCE - GAME_WAVE_REWARD
+      ),
+      env.ADMIN_DB.prepare(`
+        UPDATE coin_wallets SET balance = balance + ?
+        WHERE discord_id = ? AND changes() = 1
+      `).bind(GAME_WAVE_REWARD, session.sub)
+    ]);
+    const inserted = Number(results[1]?.meta?.changes || 0);
+    const balance = await readWallet(env, session.sub);
+    if (!inserted) {
+      const racedDuplicate = await env.ADMIN_DB.prepare(
+        "SELECT 1 AS awarded FROM game_coin_rewards WHERE session_id = ? AND wave = ? LIMIT 1"
+      ).bind(sessionId, wave).first();
+      if (racedDuplicate) return json({ awarded: false, alreadyAwarded: true, balance: balance.balance }, 200, headers);
+      return json({ error: "wave_not_eligible" }, 409, headers);
+    }
+    return json({ awarded: true, amount: GAME_WAVE_REWARD, balance: balance.balance }, 200, headers);
+  } catch (error) {
+    console.error("Game wave coin reward unavailable", error);
     return json({ error: "coin_wallet_unavailable" }, 503, headers);
   }
 }

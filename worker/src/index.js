@@ -7,7 +7,7 @@ function base64url(input) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-import { getPlayerCoinBalance, handleBotCoinRequest } from "./coins.js";
+import { getPlayerCoinBalance, awardPlayerWaveReward, handleBotCoinRequest } from "./coins.js";
 
 function fromBase64url(value) {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4);
@@ -544,6 +544,9 @@ export default {
       if (url.pathname === "/api/player/status" && request.method === "GET") return await playerStatus(request, env);
       if (url.pathname === "/api/player/coins" && request.method === "GET") {
         return await getPlayerCoinBalance(request, env, sessionFromRequest, corsHeaders);
+      }
+      if (url.pathname === "/api/player/coins/reward-wave" && request.method === "POST") {
+        return await awardPlayerWaveReward(request, env, sessionFromRequest, corsHeaders);
       }
       if (url.pathname.startsWith("/api/bot/coins/")) {
         return await handleBotCoinRequest(request, env, url.pathname);
