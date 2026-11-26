@@ -120,4 +120,12 @@ bot 設定完成後，以修改版 `coin.py` 啟動 bot 時，會從其目前 `b
 
 ### 遊戲內波次獎勵
 
-Discord 登入玩家每完成一波可申領 10 C 幣，每個 session 的波次必須依序請領；同一 session／波次只能入帳一次。每日最多 10 次，兩次成功領取至少間隔 15 秒；game session 至少建立 25 秒後才可領取。Worker 會驗證 session 屬於目前登入者、未結束且未封鎖，並使用 `GAME_SESSION_LIMITER` 保護獎勵請求；訪客不具備此資格。前端不能直接修改餘額，所有入帳均寫入與 Discord bot 共用的 D1 錢包。套用 `migrations/0004_game_coin_rewards.sql` 後再部署 Worker；獎勵資料以 `(session_id, wave)` 唯一鍵確保重複請求不會重複加值。這些檢查是伺服器端的領取限制，不代表遊戲客戶端具有完整反作弊能力。
+Discord 登入玩家每完成一波可申領 10 C 幣，每個 session 的波次必須依序請領；同一 session／波次只能入帳一次。每滾動 24 小時最多 10 次，兩次成功領取至少間隔 15 秒；game session 至少建立 25 秒後才可領取。Worker 會驗證 session 屬於目前登入者、未結束且未封鎖，並使用 `GAME_SESSION_LIMITER` 保護獎勵請求；訪客不具備此資格。前端不能直接修改餘額，所有入帳均寫入與 Discord bot 共用的 D1 錢包。獎勵資料以 `(session_id, wave)` 唯一鍵確保重複請求不會重複加值。由於敵人及波次完成判定在瀏覽器執行，登入玩家仍可能偽造請領；伺服器目前只限制總額與請領頻率，不能證明波次真的完成，不是完整反作弊方案。
+
+此次 production 已套用 `migrations/0004_game_coin_rewards.sql`；GitHub Actions 只部署 Pages，Worker 程式仍需由已授權 Wrangler 環境部署。請在 `worker/` 目錄執行：
+
+```bash
+npx wrangler deploy
+```
+
+首次部署此版本至尚未套用 migration 的環境時，先執行 `npx wrangler d1 migrations apply solovwar-admin-access --remote`。部署完成後，未登入的 `POST /api/player/coins/reward-wave` 應被拒絕，而非回傳通用成功回應。
