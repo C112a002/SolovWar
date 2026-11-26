@@ -30,6 +30,6 @@
 
 ## Socket.IO 多人模式增補
 
-主選單的「多人連線」模式導向 `game/?mode=multiplayer`。遊戲頁透過 Socket.IO CDN 載入 `multiplayer.js`，提供玩家代號、建立房間、加入 6 碼房間、成員狀態與進入戰場操作；`loader.js` 先設定 `window.__MULTIPLAYER_MODE`，再於既有主迴圈後載入多人模組。多人模式保留 Three.js 場景、玩家物理與武器，但跳過單人 AI 波次。
+主選單的「多人連線」模式導向 `game/?mode=multiplayer`。遊戲頁透過 Socket.IO CDN 載入 `multiplayer.js`，提供玩家代號、3 個公開伺服器選擇、即時成員狀態與進入戰場操作；`loader.js` 先設定 `window.__MULTIPLAYER_MODE`，再於既有主迴圈後載入多人模組。多人模式保留 Three.js 場景、玩家物理與武器，但跳過單人 AI 波次。
 
-後端位於獨立的 WebDev Managed Git 專案，使用 Node.js 20、Express 與 Socket.IO。房間狀態以服務實例記憶體保存，每房最多 16 人，並同步玩家位置、旋轉、生命值與基礎射擊事件；部署採 Autoscale／on_demand，閒置後可能冷啟動，多實例切換時不保證房間狀態持續。前端必須提示這些限制。另需將 WebDev App Auth 改為公開匿名存取，否則 GitHub Pages 端無法連線到 Socket.IO。
+後端位於獨立的 WebDev Managed Git 專案，使用 Node.js 20、Express 與 Socket.IO。服務固定提供 3 個公開伺服器，每台最多 4 人，並同步玩家位置、旋轉、生命值與基礎射擊事件；部署採 Autoscale／on_demand，閒置後可能冷啟動，多實例切換時不保證成員狀態持續。前端必須提示這些限制。既有 Discord 封鎖驗證會阻止被封鎖玩家進入。
