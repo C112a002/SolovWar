@@ -17,9 +17,14 @@
   const keybindList = document.querySelector("#keybind-list");
   const coinBalancePanel = document.querySelector("[data-coin-balance]");
   const coinAmount = document.querySelector("[data-coin-amount]");
+  const modeScreen = document.querySelector("#mode-screen");
+  const modeBack = document.querySelector(".mode-back");
+  const modeAccount = document.querySelector("[data-mode-account]");
+  const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
   const desktopKeys = window.matchMedia("(pointer: fine)");
   const touchDevice = window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
   const STORAGE_KEY = "solovwar-settings";
+  const MODE_HASH = "#modes";
   const DEFAULT_BIND = {
     fwd: "KeyW", back: "KeyS", left: "KeyA", right: "KeyD", jump: "Space",
     run: "ShiftLeft", crouch: "KeyC", aim: "KeyV", respawn: "KeyT", reload: "KeyR"
@@ -37,6 +42,7 @@
   let noticeTimer;
   let capturing = null;
   let coinRequestId = 0;
+  let modeHistoryPushed = false;
 
   function readSettings() {
     try {
@@ -75,6 +81,82 @@
     const unavailable = loggedIn && statusValue !== "allowed";
     startLink.classList.toggle("player-banned", statusValue === "banned");
     startLink.setAttribute("aria-disabled", String(unavailable));
+  }
+
+  function startBlockedMessage() {
+    const auth = window.SolovWarDiscord;
+    if (!auth?.getUser()) return "";
+    const access = auth.getPlayerAccess();
+    if (access?.status === "allowed") return "";
+    if (access?.status === "banned") return `此 Discord 帳戶已被封鎖，無法開始遊戲。${access.reason ? `原因：${access.reason}` : ""}`;
+    if (access?.status === "checking") return "正在確認 Discord 帳戶狀態，請稍候再開始遊戲。";
+    return "目前無法確認 Discord 帳戶狀態，請稍後再試；也可以先登出後以訪客身分遊玩。";
+  }
+
+  function canStartGame() {
+    const message = startBlockedMessage();
+    if (!message) return true;
+    showNotice(message);
+    return false;
+  }
+
+  function updateModeAccount() {
+    if (!modeAccount) return;
+    const auth = window.SolovWarDiscord;
+    const user = auth?.getUser();
+    if (!user) {
+      modeAccount.textContent = "目前以訪客身分遊玩：C 幣獎勵需要先回主選單登入 Discord。";
+      return;
+    }
+    const status = auth.getPlayerAccess()?.status || "unknown";
+    const name = user.global_name || user.username || "玩家";
+    if (status === "allowed") modeAccount.textContent = `已連結 Discord：${name}。完成波次可獲得 10 枚 C 幣。`;
+    else if (status === "banned") modeAccount.textContent = "此 Discord 帳戶已被封鎖，無法進入任何模式。";
+    else if (status === "checking") modeAccount.textContent = "正在確認 Discord 帳戶狀態…";
+    else modeAccount.textContent = "目前無法確認 Discord 帳戶狀態，請稍後再試。";
+  }
+
+  function openModeSelect({ pushHistory = true } = {}) {
+    if (!modeScreen || !modeScreen.hidden) return;
+    modeScreen.hidden = false;
+    startLink.setAttribute("aria-expanded", "true");
+    document.body.classList.add("mode-select-open");
+    updateModeAccount();
+    if (pushHistory && location.hash !== MODE_HASH) {
+      try {
+        history.pushState({ solovwarMode: "select" }, "", `${location.pathname}${location.search}${MODE_HASH}`);
+        modeHistoryPushed = true;
+      } catch {
+        modeHistoryPushed = false;
+      }
+    }
+    modeScreen.focus({ preventScroll: true });
+  }
+
+  function closeModeSelect({ restoreFocus = true, updateHistory = true } = {}) {
+    if (!modeScreen || modeScreen.hidden) return;
+    modeScreen.hidden = true;
+    startLink.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("mode-select-open");
+    if (updateHistory && location.hash === MODE_HASH) {
+      if (modeHistoryPushed) {
+        modeHistoryPushed = false;
+        history.back();
+      } else {
+        history.replaceState(null, "", `${location.pathname}${location.search}`);
+      }
+    }
+    if (restoreFocus) startLink.focus({ preventScroll: true });
+  }
+
+  function syncModeFromHash() {
+    if (!modeScreen) return;
+    if (location.hash === MODE_HASH) {
+      if (modeScreen.hidden) openModeSelect({ pushHistory: false });
+    } else {
+      modeHistoryPushed = false;
+      closeModeSelect({ restoreFocus: false, updateHistory: false });
+    }
   }
 
   async function refreshCoinBalance() {
@@ -280,27 +362,28 @@
   announcementDialog.addEventListener("click", event => {
     if (event.target === announcementDialog) closeAnnouncements();
   });
-  startLink.addEventListener("click", event => {
-    const auth = window.SolovWarDiscord;
-    if (!auth?.getUser()) return;
-    const access = auth.getPlayerAccess();
-    if (access?.status === "allowed") return;
-    event.preventDefault();
-    if (access?.status === "banned") {
-      showNotice(`此 Discord 帳戶已被封鎖，無法開始遊戲。${access.reason ? `原因：${access.reason}` : ""}`);
-    } else if (access?.status === "checking") {
-      showNotice("正在確認 Discord 帳戶狀態，請稍候再開始遊戲。");
-    } else {
-      showNotice("目前無法確認 Discord 帳戶狀態，請稍後再試；也可以先登出後以訪客身分遊玩。");
-    }
+  startLink.addEventListener("click", () => {
+    if (!canStartGame()) return;
+    openModeSelect();
   });
+  modeBack?.addEventListener("click", () => closeModeSelect());
+  modeButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      if (!canStartGame()) return;
+      window.location.assign(button.dataset.href || "./game/");
+    });
+  });
+  window.addEventListener("popstate", syncModeFromHash);
+  window.addEventListener("hashchange", syncModeFromHash);
   window.addEventListener("solovwar:auth-updated", () => {
     updateStartAvailability();
     refreshCoinBalance();
+    updateModeAccount();
   });
   updateStartAvailability();
   refreshCoinBalance();
   loadAnnouncements();
+  if (location.hash === MODE_HASH) openModeSelect({ pushHistory: false });
 
   document.addEventListener("keydown", event => {
     if (capturing) {
@@ -334,6 +417,7 @@
       if (!settingsDialog.hidden) closeSettings();
       else if (!aboutDialog.hidden) closeAbout();
       else if (!announcementDialog.hidden) closeAnnouncements();
+      else if (modeScreen && !modeScreen.hidden) closeModeSelect();
     }
   });
 

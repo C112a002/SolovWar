@@ -14,15 +14,15 @@
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./manifest.json">
   <link rel="preload" as="image" href="./menu-assets/background.gif">
-  <link rel="stylesheet" href="./menu.css?v=admin-access-1">
+  <link rel="stylesheet" href="./menu.css?v=mode-select-1">
 </head>
 <body>
   <main class="home-screen">
     <div class="menu-stage" aria-label="SolovWar 主選單">
       <nav class="menu-items" aria-label="主選單">
-        <a class="menu-item start-item" href="./game/" aria-label="開始遊戲">
+        <button class="menu-item start-item" type="button" aria-label="開始遊戲" aria-controls="mode-screen" aria-expanded="false">
           <img src="./menu-assets/start.png" alt="" draggable="false">
-        </a>
+        </button>
         <button class="menu-item settings-item" type="button" aria-label="設定" aria-haspopup="dialog" aria-controls="settings-dialog">
           <img src="./menu-assets/settings.png" alt="" draggable="false">
         </button>
@@ -53,6 +53,33 @@
     </section>
 
     <button class="announcement-button" id="announcement-open" type="button" aria-haspopup="dialog" aria-controls="announcement-dialog">公告</button>
+
+    <section class="mode-screen" id="mode-screen" hidden tabindex="-1" aria-labelledby="mode-title" aria-describedby="mode-subtitle">
+      <div class="mode-shell">
+        <header class="mode-heading">
+          <p class="mode-eyebrow">SOLOVWAR // 作戰模式</p>
+          <h1 id="mode-title">選擇遊戲模式</h1>
+          <p class="mode-subtitle" id="mode-subtitle">選擇這次要投入的戰場。每種模式的規則、敵人配置與 C 幣獎勵各不相同。</p>
+        </header>
+        <ul class="mode-list">
+          <li>
+            <button class="mode-card" type="button" data-mode="endless" data-href="./game/" aria-label="無盡征途：與人機對戰的波次生存模式，開始遊戲">
+              <span class="mode-index" aria-hidden="true">01</span>
+              <span class="mode-body">
+                <span class="mode-name-row"><span class="mode-name">無盡征途</span><span class="mode-tag">人機對戰</span></span>
+                <span class="mode-desc">與 AI 敵人逐波交戰。敵人會聽聲辨位、尋找掩護、包抄並互相通報位置；爆頭傷害加倍，每波結束會回復生命並補滿彈藥。</span>
+                <span class="mode-meta"><span>波次生存</span><span>單人</span><span>完成波次可得 10 C 幣</span></span>
+              </span>
+              <span class="mode-enter" aria-hidden="true">進入戰場</span>
+            </button>
+          </li>
+        </ul>
+        <footer class="mode-footer">
+          <p class="mode-account" data-mode-account>正在確認 Discord 狀態…</p>
+          <button class="mode-back" type="button">返回主選單</button>
+        </footer>
+      </div>
+    </section>
 
     <div class="dialog-backdrop" id="settings-dialog" hidden>
       <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -149,6 +176,6 @@
   </main>
   <script src="./auth-config.js"></script>
   <script src="./discord-auth.js" defer></script>
-  <script src="./menu.js" defer></script>
+  <script src="./menu.js?v=mode-select-1" defer></script>
 </body>
 </html>
