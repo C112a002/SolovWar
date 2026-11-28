@@ -74,8 +74,19 @@
             </button>
           </li>
           <li>
-            <button class="mode-card multiplayer-mode-card" type="button" data-mode="multiplayer" data-href="./game/?mode=multiplayer" aria-label="多人連線：使用 Socket.IO 建立或加入房間，開始遊戲">
+            <button class="mode-card range-mode-card" type="button" data-mode="range" data-href="./game/?mode=range" aria-label="靶場：使用靶場模型的單人自由練習模式，開始遊戲">
               <span class="mode-index" aria-hidden="true">02</span>
+              <span class="mode-body">
+                <span class="mode-name-row"><span class="mode-name">靶場</span><span class="mode-tag">單人練習</span></span>
+                <span class="mode-desc">進入使用靶場建模與完整 Minecraft 風格材質的練習場，自由探索場地並練習移動、瞄準與射擊；不會連線，也不會啟動 AI 波次。</span>
+                <span class="mode-meta"><span>自由練習</span><span>單人</span><span>完整貼圖</span></span>
+              </span>
+              <span class="mode-enter" aria-hidden="true">進入靶場</span>
+            </button>
+          </li>
+          <li>
+            <button class="mode-card multiplayer-mode-card" type="button" data-mode="multiplayer" data-href="./game/?mode=multiplayer" aria-label="多人連線：使用 Socket.IO 建立或加入房間，開始遊戲">
+              <span class="mode-index" aria-hidden="true">03</span>
               <span class="mode-body">
                 <span class="mode-name-row"><span class="mode-name">多人連線</span><span class="mode-tag">Socket.IO</span></span>
                 <span class="mode-desc">建立或加入房間，與其他玩家在同一座戰場中同步移動、視角與射擊事件；房間代碼會在進入後顯示。</span>
@@ -86,7 +97,7 @@
           </li>
           <li>
             <button class="mode-card custom-server-mode-card" type="button" data-mode="custom" data-href="./game/?mode=custom" aria-label="自訂伺服器：連接自己的 Socket.IO 伺服器並建立可選密碼的房間">
-              <span class="mode-index" aria-hidden="true">03</span>
+              <span class="mode-index" aria-hidden="true">04</span>
               <span class="mode-body">
                 <span class="mode-name-row"><span class="mode-name">自訂伺服器</span><span class="mode-tag">自架</span></span>
                 <span class="mode-desc">連接你自己部署的 Socket.IO 伺服器，自行開房並選擇是否設定密碼；自訂房間流量不會佔用官方公開伺服器。</span>

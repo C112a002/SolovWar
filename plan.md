@@ -43,3 +43,6 @@
 ## P2P 手動交換模式增補
 
 自訂伺服器頁面提供「伺服器房間」與「P2P 手動交換」兩種傳輸方式。P2P 限制為兩名玩家，不使用自訂 Socket.IO 伺服器；房主以 Google 公開 STUN `stun:stun.l.google.com:19302` 建立 WebRTC SDP Offer 並等待 ICE gathering 完成，訪客貼上 Offer 產生 SDP Answer，房主貼回 Answer 後以 RTCDataChannel 傳送玩家狀態與射擊事件。介面明確標示 P2P 無法提供伺服器端防外掛，若直連失敗則改用伺服器房間。
+
+## 靶場模式架構
+靶場資產放在遊戲包 `assets/models/range/`，包含修正後的 `range.obj`／`range.mtl` 與 `textures/` 下 13 張原始材質。載入器只有在 URL `?mode=range` 時預載靶場 OBJ 與貼圖；`world.js` 以 54×6×31 的輕量碰撞邊界提供地面與外牆碰撞，`scene.js` 以自有 OBJ 解析器按材質組建立完整貼圖網格。靶場不進入多人模組，也不建立 AI 波次，保留返回主選單與一般單人操作。
