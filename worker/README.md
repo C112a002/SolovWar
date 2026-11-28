@@ -99,6 +99,7 @@ npx wrangler deploy
 | Method / path | 用途 | 權限 |
 | --- | --- | --- |
 | `GET /api/player/coins` | 登入玩家讀取本人 C 幣餘額 | 有效 Discord session |
+| `GET /api/widget/coins?discordId=...` | Scriptable 小工具讀取指定帳戶 C 幣餘額 | `Authorization: Bearer <WIDGET_COINS_API_SECRET>`，且 ID 必須等於 `WIDGET_DISCORD_ID` |
 | `POST /api/player/coins/reward-wave` | 遊戲完成波次後申領 10 C 幣；body 為 `{ "sessionId": "...", "wave": 1 }` | 有效 Discord session |
 | `GET /api/bot/coins/balance?userId=...` | bot 讀取餘額與簽到／礦場冷卻欄位 | `Authorization: Bearer <bot secret>` |
 | `POST /api/bot/coins/operation` | bot 執行 `add`、`spend`、`transfer`、`daily`、`gamble`、`mine`；每個變動操作需附唯一 `idempotencyKey` | 同上 |
@@ -113,6 +114,7 @@ npx wrangler deploy
 ```
 
 `COIN_BOT_API_SECRET` 必須是至少 32 字元的高熵隨機值。可在可信任的管理環境產生（例如 `openssl rand -hex 32`），並安全地將同一值分別設定在 Cloudflare Worker secret 與 bot 執行環境的 `SOLVOWAR_COINS_API_SECRET`；不要把值貼到聊天、提交至 repo 或寫進公開設定檔。Worker API 根網址設定為 bot 環境變數 `SOLVOWAR_COINS_API_URL`（例如 `https://<worker-domain>`，不含結尾斜線）。若缺少 Worker secret，bot API 會回傳 503，不能視為同步已啟用。
+Widget API 使用獨立的 `WIDGET_COINS_API_SECRET`，不可重用 Bot Token。部署前請將 `WIDGET_DISCORD_ID` 設為實際的 17–20 位 Discord ID，並執行 `npx wrangler secret put WIDGET_COINS_API_SECRET` 設定至少 32 字元的隨機唯讀 Token。Scriptable 腳本會以 Bearer Token 呼叫端點；因為 Scriptable 腳本可被使用者讀取，這個 Token 只應被視為「唯讀、單一帳戶」憑證，不能授予任何寫入權限。
 
 bot 設定完成後，以修改版 `coin.py` 啟動 bot 時，會從其目前 `bot.db` 的 `coins` 資料表分批匯入舊帳戶；保留 `last_daily`、`last_mine`，只新增 D1 尚未存在的帳戶。匯入不會刪除或覆寫 D1 已有錢包，故應先確認使用正確的主資料庫檔案，而非舊備份。舊 bot 在切換前仍可能只寫本機 SQLite；首次匯入應在停止舊版 bot 並以新版設定啟動時執行，以避免切換期間新增的本機變更未被納入。
 

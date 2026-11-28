@@ -51,6 +51,16 @@ async function authorizedBotRequest(request, env) {
   return constantTimeEqual(provided, expected);
 }
 
+async function authorizedWidgetRequest(request, env) {
+  const expected = env.WIDGET_COINS_API_SECRET;
+  const header = request.headers.get("Authorization") || "";
+  if (!expected || expected.length < 32) return false;
+  if (!header.startsWith("Bearer ")) return false;
+  const provided = header.slice(7);
+  if (provided.length < 32 || provided.length > 512) return false;
+  return constantTimeEqual(provided, expected);
+}
+
 async function readWallet(env, discordId) {
   const row = await env.ADMIN_DB.prepare(
     "SELECT balance, last_daily, last_mine FROM coin_wallets WHERE discord_id = ?"
@@ -73,6 +83,23 @@ export async function getPlayerCoinBalance(request, env, sessionFromRequest, cor
   } catch (error) {
     console.error("Player C coin balance unavailable", error);
     return json({ error: "coin_wallet_unavailable" }, 503, headers);
+  }
+}
+
+export async function getWidgetCoinBalance(request, env) {
+  if (!(await authorizedWidgetRequest(request, env))) return json({ error: "unauthorized" }, 401);
+  const url = new URL(request.url);
+  const discordId = url.searchParams.get("discordId");
+  const allowedId = env.WIDGET_DISCORD_ID;
+  if (!discordId || !DISCORD_ID_RE.test(discordId)) return json({ error: "invalid_discord_id" }, 400);
+  if (!allowedId || !DISCORD_ID_RE.test(allowedId)) return json({ error: "widget_not_configured" }, 503);
+  if (discordId !== allowedId) return json({ error: "forbidden" }, 403);
+  try {
+    const wallet = await readWallet(env, discordId);
+    return json({ discordId, balance: wallet.balance, updatedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error("Widget C coin balance unavailable", error);
+    return json({ error: "coin_wallet_unavailable" }, 503);
   }
 }
 

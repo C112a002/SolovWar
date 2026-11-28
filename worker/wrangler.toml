@@ -7,6 +7,8 @@ keep_vars = true
 GAME_ORIGIN = "https://c112a002.github.io"
 GAME_PATH_PREFIX = "/SolovWar"
 OWNER_DISCORD_ID = "1096316400529842206"
+# Widget 查詢只允許這一個 Discord ID；請在部署前改成實際目標 ID。
+WIDGET_DISCORD_ID = "1234567890"
 
 [[d1_databases]]
 binding = "ADMIN_DB"
@@ -23,3 +25,4 @@ simple = { limit = 20, period = 60 }
 # wrangler secret put DISCORD_CLIENT_ID
 # wrangler secret put DISCORD_CLIENT_SECRET
 # wrangler secret put SESSION_SECRET
+# wrangler secret put WIDGET_COINS_API_SECRET
